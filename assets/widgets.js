@@ -227,6 +227,148 @@
     draw();
   };
 
+  // The central limit theorem by simulation. Draw n values from a skewed source
+  // (Exponential with mean 1, variance 1), average them, repeat M times to build
+  // the sampling distribution of the mean, and overlay Normal(1, 1/n). As n
+  // grows, the skewed histogram pulls into the bell despite the skewed source.
+  WIDGETS["clt"] = function (figure, cap) {
+    var mu = 1;
+    var sigma = 1;
+    var xr = [0, 4];
+    var M = 2400;
+    var bins = 46;
+    var bw = (xr[1] - xr[0]) / bins;
+
+    var cv = makeCanvas(figure, cap, 0.62);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var nInput = addSlider(
+      controls,
+      null,
+      "sample size&nbsp;<em>n</em>",
+      1,
+      40,
+      1,
+      1
+    );
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "widget-button";
+    btn.textContent = "Resample";
+    controls.appendChild(btn);
+
+    var cache = null;
+
+    function expSample() {
+      return -Math.log(1 - Math.random()); // Exponential(1): skewed, mean 1.
+    }
+
+    function simulate(n) {
+      var counts = new Array(bins);
+      for (var b = 0; b < bins; b++) counts[b] = 0;
+      for (var t = 0; t < M; t++) {
+        var s = 0;
+        for (var i = 0; i < n; i++) s += expSample();
+        var m = s / n;
+        var bin = Math.floor((m - xr[0]) / bw);
+        if (bin >= 0 && bin < bins) counts[bin] += 1;
+      }
+      return counts.map(function (c) {
+        return c / (M * bw); // Convert to a density so the normal overlays it.
+      });
+    }
+
+    function normalPdf(x, m, sd) {
+      var z = (x - m) / sd;
+      return Math.exp(-0.5 * z * z) / (sd * Math.sqrt(2 * Math.PI));
+    }
+
+    function draw(resim) {
+      var n = Math.round(parseFloat(nInput.value));
+      if (resim || !cache || cache.n !== n) cache = { n: n, dens: simulate(n) };
+      var dim = cv.size();
+      var padL = 30;
+      var pad = 10;
+      var sd = sigma / Math.sqrt(n);
+      var ymax = Math.max(normalPdf(mu, mu, sd), Math.max.apply(null, cache.dens));
+      ymax = Math.max(ymax, 1.05) * 1.12;
+      var yr = [0, ymax];
+      var mx = function (x) {
+        return padL + ((x - xr[0]) * (dim.w - padL - pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      // Histogram of the sample means.
+      ctx.fillStyle = C.accentSoft;
+      ctx.strokeStyle = C.accent;
+      ctx.lineWidth = 1;
+      for (var b = 0; b < bins; b++) {
+        var x0 = mx(xr[0] + b * bw);
+        var x1 = mx(xr[0] + (b + 1) * bw);
+        var y0 = my(0);
+        var y1 = my(cache.dens[b]);
+        if (cache.dens[b] > 0) {
+          ctx.fillRect(x0, y1, x1 - x0, y0 - y1);
+          ctx.strokeRect(x0, y1, x1 - x0, y0 - y1);
+        }
+      }
+
+      // The skewed source density (Exponential), a faint fixed reference.
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = C.amber;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (var i = 0; i <= 200; i++) {
+        var xx = xr[0] + ((xr[1] - xr[0]) * i) / 200;
+        var yy = xx >= 0 ? Math.exp(-xx) : 0;
+        if (i === 0) ctx.moveTo(mx(xx), my(yy));
+        else ctx.lineTo(mx(xx), my(yy));
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // The normal approximation the CLT promises.
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (var k = 0; k <= 200; k++) {
+        var x = xr[0] + ((xr[1] - xr[0]) * k) / 200;
+        var y = normalPdf(x, mu, sd);
+        if (k === 0) ctx.moveTo(mx(x), my(y));
+        else ctx.lineTo(mx(x), my(y));
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = C.muted;
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("sample mean →", dim.w - pad, dim.h - 6);
+
+      readout.innerHTML =
+        '<span class="widget-num bias">skewed source: Exponential</span>' +
+        '<span class="widget-num total">histogram: mean of n draws</span>' +
+        '<span class="widget-num var">overlay: Normal(1, 1/n), n = ' +
+        n +
+        "</span>";
+    }
+
+    nInput.addEventListener("input", function () {
+      draw(true);
+    });
+    btn.addEventListener("click", function () {
+      draw(true);
+    });
+    window.addEventListener("resize", function () {
+      draw(false);
+    });
+    draw(true);
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {

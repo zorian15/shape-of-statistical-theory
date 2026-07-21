@@ -975,3 +975,18 @@ figure.widget {
 .widget-num.opt {
     color: var(--muted);
 }
+
+.widget-button {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    padding: 0.25rem 0.7rem;
+    cursor: pointer;
+}
+
+.widget-button:hover {
+    background: var(--accent-soft);
+}
