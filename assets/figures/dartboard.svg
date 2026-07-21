@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 720" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Four dartboards: bias moves the cluster off the bullseye, variance spreads it out.">
+<text x="28.0" y="40.0" font-size="11" font-weight="700" fill="#6a6d73" letter-spacing="1">THE TWO WAYS TO BE WRONG</text>
+<circle cx="190" cy="230" r="96" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="230" r="64" fill="#eaf0f6" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="230" r="32" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="230" r="6" fill="#9c6b12"/>
+<circle cx="186.1" cy="221.2" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="202.4" cy="215.1" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="208.5" cy="229.5" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="192.8" cy="235.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="197.9" cy="224.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="183.2" cy="232.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="204.3" cy="236.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="189.3" cy="216.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<text x="190" y="356" font-size="13" font-weight="600" text-anchor="middle" fill="#3b3d42">low bias · low variance</text>
+<circle cx="510" cy="230" r="96" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="230" r="64" fill="#eaf0f6" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="230" r="32" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="230" r="6" fill="#9c6b12"/>
+<circle cx="570.1" cy="179.2" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="586.4" cy="173.1" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="592.5" cy="187.5" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="576.8" cy="193.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="581.9" cy="182.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="567.2" cy="190.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="588.3" cy="194.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="573.3" cy="174.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<text x="510" y="356" font-size="13" font-weight="600" text-anchor="middle" fill="#3b3d42">high bias · low variance</text>
+<circle cx="190" cy="560" r="96" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="560" r="64" fill="#eaf0f6" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="560" r="32" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="190" cy="560" r="6" fill="#9c6b12"/>
+<circle cx="167.5" cy="542.2" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="214.4" cy="524.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="231.9" cy="566.1" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="186.8" cy="583.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="201.5" cy="552.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="159.2" cy="575.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="219.9" cy="586.4" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="176.7" cy="529.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<text x="190" y="686" font-size="13" font-weight="600" text-anchor="middle" fill="#3b3d42">low bias · high variance</text>
+<circle cx="510" cy="560" r="96" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="560" r="64" fill="#eaf0f6" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="560" r="32" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.2"/>
+<circle cx="510" cy="560" r="6" fill="#9c6b12"/>
+<circle cx="551.5" cy="500.2" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="598.4" cy="482.7" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="615.9" cy="524.1" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="570.8" cy="541.6" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="585.5" cy="510.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="543.2" cy="533.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="603.9" cy="544.4" r="4.5" fill="#274b6d" opacity="0.85"/>
+<circle cx="560.7" cy="487.3" r="4.5" fill="#274b6d" opacity="0.85"/>
+<text x="510" y="686" font-size="13" font-weight="600" text-anchor="middle" fill="#3b3d42">high bias · high variance</text>
+</svg>

@@ -1,0 +1,29 @@
+# This file records the copier template and the answers used to generate this
+# book. It lets `copier update` pull later engine fixes as a three-way merge.
+# Changes here are overwritten by Copier; edit your answers via `copier update`.
+_commit: v1.1.0
+_src_path: gh:zorian15/textbook-template
+apple_web_app_title: Stat Theory
+audience: 'A graduate student who has had calculus, linear algebra, and a first course
+    in probability, and wants the load-bearing picture of theoretical statistics:
+    what the ideas mean and when methods actually work. Concepts come first and proofs
+    are sketched rather than marched through, so the book reads as a map of the field
+    anchored in intuition.'
+author: Zorian
+book_brand_html: The Shape of<br>Statistical Theory
+book_description: how the core ideas of theoretical statistics fit together
+book_subtitle: How the pieces of theoretical statistics fit — distributions, estimation,
+    risk, and regularization, from intuition up.
+book_title: The Shape of Statistical Theory
+callout_title: A sharper question
+canonical_base: ''
+draft: true
+github_user: zorian15
+meta_description: A textbook on how the core ideas of theoretical statistics fit together.
+quiz_intro_framing: A few questions to test the ideas from this
+repo_url: https://github.com/zorian15/shape-of-statistical-theory
+site_name: ''
+site_url: ''
+slug: shape-of-statistical-theory
+use_glossary: true
+
