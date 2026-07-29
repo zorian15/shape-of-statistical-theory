@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 360" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Three nested boxes: almost sure convergence inside convergence in probability inside convergence in distribution.">
+<text x="40.0" y="42.0" font-size="11" font-weight="700" fill="#6a6d73" letter-spacing="1">WHICH IMPLIES WHICH</text>
+<defs><marker id="arrowmodes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#274b6d"/></marker></defs>
+<rect x="40" y="66" width="620" height="230" rx="10" fill="#ffffff" stroke="#cfcdc4" stroke-width="1.4"/>
+<text x="350" y="94" font-size="14" font-weight="700" text-anchor="middle" fill="#274b6d">Convergence in distribution</text>
+<text x="350" y="112" font-size="11" text-anchor="middle" fill="#6a6d73">weakest</text>
+<rect x="118" y="126" width="464" height="146" rx="9" fill="#eaf0f6" stroke="#cfcdc4" stroke-width="1.2"/>
+<text x="350" y="152" font-size="14" font-weight="700" text-anchor="middle" fill="#274b6d">Convergence in probability</text>
+<rect x="205" y="170" width="290" height="82" rx="8" fill="#d3e0ee" stroke="#cfcdc4" stroke-width="1.2"/>
+<text x="350" y="206" font-size="14" font-weight="700" text-anchor="middle" fill="#274b6d">Almost sure</text>
+<text x="350" y="226" font-size="11" text-anchor="middle" fill="#6a6d73">strongest</text>
+<line x1="230" y1="326" x2="628" y2="326" stroke="#3b3d42" stroke-width="1.6" marker-end="url(#arrowmodes)"/>
+<text x="424" y="318" font-size="12" font-style="italic" text-anchor="middle" fill="#3b3d42">each inner mode implies the outer</text>
+</svg>
