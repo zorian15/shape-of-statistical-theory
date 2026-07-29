@@ -133,6 +133,23 @@ _ENTRIES: tuple[Reference, ...] = (
         arxiv="",
         url="https://doi.org/10.1561/2200000001",
     ),
+    Reference(
+        key="gelman2013",
+        authors=(
+            "Gelman, A.",
+            "Carlin, J. B.",
+            "Stern, H. S.",
+            "Dunson, D. B.",
+            "Vehtari, A.",
+            "Rubin, D. B.",
+        ),
+        truncated=False,
+        year=2013,
+        title="Bayesian Data Analysis, Third Edition",
+        venue="Chapman and Hall/CRC",
+        arxiv="",
+        url="http://www.stat.columbia.edu/~gelman/book/",
+    ),
 )
 
 

@@ -1078,6 +1078,515 @@ def fig_outside_the_family() -> Path:
     return save_plot(fig, "outside-the-family.svg")
 
 
+def fig_mle_asymptotics() -> Path:
+    """Plot: the MLE's sampling distribution tightening to a Normal at the truth."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    theta = 1.0  # The true parameter.
+    info = 1.0  # Fisher information per observation, I(theta).
+    x = np.linspace(-0.4, 2.4, 700)
+    for n, color, label in (
+        (5, VIOLET, "n = 5"),
+        (20, AMBER, "n = 20"),
+        (80, ACCENT, "n = 80"),
+    ):
+        sd = 1.0 / np.sqrt(n * info)  # Cramér–Rao floor width: 1/(n I).
+        dens = np.exp(-0.5 * ((x - theta) / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
+        ax.plot(x, dens, color=color, linewidth=2.0, label=label)
+        ax.fill_between(x, dens, color=color, alpha=0.07)
+    ax.axvline(theta, color=INK_SOFT, linestyle="--", linewidth=1.2)
+    ax.set_ylim(0, 4.4)
+    ax.set_xlim(x[0], x[-1])
+    ax.text(theta + 0.04, 4.15, "truth θ", color=INK_SOFT, fontsize=8, va="top")
+    ax.set_xlabel("maximum-likelihood estimate  θ̂")
+    ax.set_ylabel("sampling density")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0)
+    ax.annotate(
+        "width ∝ 1/√n",
+        xy=(theta + 1.0 / np.sqrt(20), 0.9),
+        xytext=(theta + 0.55, 2.4),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.legend(loc="upper left")
+    fig.tight_layout()
+    return save_plot(fig, "mle-asymptotics.svg")
+
+
+def fig_mle_pitfalls() -> Path:
+    """Plot: two failure modes — an irregular boundary peak and a small-sample bias."""
+    style_plot()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.2, 3.3))
+
+    # Left: uniform on [0, theta] likelihood — the peak is a boundary corner.
+    m = 1.4  # The sample maximum, max_i x_i.
+    n = 6
+    theta = np.linspace(0.0, 3.0, 700)
+    like = np.where(theta >= m, (m / np.maximum(theta, m)) ** n, 0.0)
+    ax1.plot(theta, like, color=ACCENT, linewidth=2.0)
+    ax1.fill_between(theta, like, color=ACCENT, alpha=0.08)
+    ax1.axvline(m, color=AMBER, linestyle="--", linewidth=1.2)
+    ax1.plot([m], [1.0], marker="o", color=AMBER, markersize=6, zorder=5)
+    ax1.set_title("Uniform on [0, θ]: peak at the edge")
+    ax1.set_xlabel("candidate θ")
+    ax1.set_ylabel("likelihood (scaled)")
+    ax1.set_xlim(0, 3)
+    ax1.set_ylim(0, 1.25)
+    ax1.annotate(
+        "MLE = max xᵢ,\nslope never zero",
+        xy=(m, 1.0),
+        xytext=(m + 0.18, 0.62),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    # Right: the MLE of a Normal variance divides by n, so it runs low.
+    ns = np.arange(2, 41)
+    ratio = (ns - 1) / ns
+    ax2.plot(ns, ratio, color=ACCENT, linewidth=2.0, marker="o", markersize=3)
+    ax2.axhline(1.0, color=INK_SOFT, linestyle="--", linewidth=1.2)
+    ax2.text(40, 1.012, "unbiased target", color=INK_SOFT, fontsize=8, ha="right")
+    ax2.set_title("MLE of σ² is biased low")
+    ax2.set_xlabel("sample size  n")
+    ax2.set_ylabel("E[σ̂²] / σ²  =  (n−1)/n")
+    ax2.set_xlim(0, 41)
+    ax2.set_ylim(0.3, 1.08)
+    ax2.annotate(
+        "divides by n, not n−1",
+        xy=(6, 5 / 6),
+        xytext=(13, 0.58),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    fig.tight_layout()
+    return save_plot(fig, "mle-pitfalls.svg")
+
+
+def fig_estimator_sampling_distributions() -> Path:
+    """Plot: two estimators' sampling distributions over the same true value."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+
+    theta = 0.0  # The true value both rules aim at, marked on the axis.
+    x = np.linspace(-4.2, 4.2, 500)
+
+    def normal(mu, sd):
+        return np.exp(-0.5 * ((x - mu) / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
+
+    wide = normal(0.0, 1.5)  # Unbiased but high variance.
+    tight_mu = 1.05
+    tight = normal(tight_mu, 0.62)  # Biased but low variance.
+
+    ax.axvline(theta, color=INK_SOFT, linestyle="--", linewidth=1.3, zorder=1)
+    ax.fill_between(x, 0, wide, color=ACCENT, alpha=0.14)
+    ax.plot(x, wide, color=ACCENT, linewidth=2.2, label="unbiased, high variance")
+    ax.fill_between(x, 0, tight, color=AMBER, alpha=0.14)
+    ax.plot(x, tight, color=AMBER, linewidth=2.2, label="biased, low variance")
+
+    peak = tight.max()
+    top = peak * 1.34
+    ax.set_ylim(0, top)
+    # "true theta" rides the top of the dashed line, to its left to clear the arrow.
+    ax.text(
+        theta - 0.12,
+        top * 0.99,
+        "true θ",
+        color=INK_SOFT,
+        fontsize=9,
+        ha="right",
+        va="top",
+    )
+    # Bias arrow: from the truth to the biased rule's center.
+    ax.annotate(
+        "",
+        xy=(tight_mu, peak * 1.04),
+        xytext=(theta, peak * 1.04),
+        arrowprops=dict(arrowstyle="<->", color=INK_SOFT, lw=1.1),
+    )
+    ax.text(
+        (theta + tight_mu) / 2,
+        peak * 1.11,
+        "bias",
+        color=INK_SOFT,
+        fontsize=8,
+        ha="center",
+        va="bottom",
+    )
+
+    ax.set_xlabel("value of the estimate")
+    ax.set_ylabel("sampling density")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.set_xlim(-4.2, 4.2)
+    ax.legend(loc="upper left")
+    fig.tight_layout()
+    return save_plot(fig, "estimator-sampling-distributions.svg")
+
+
+def fig_consistency_concentration() -> Path:
+    """Plot: an estimator's sampling distribution concentrating as n grows."""
+    from matplotlib.colors import LinearSegmentedColormap
+
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+
+    theta = 0.0  # The estimand; every curve concentrates onto it.
+    sigma = 3.0  # Population spread; the estimator's SE is sigma / sqrt(n).
+    x = np.linspace(-3.0, 3.0, 600)
+
+    cmap = LinearSegmentedColormap.from_list("shrink", ["#b7c6d6", ACCENT])
+    ns = (5, 20, 80, 320)
+    peak = 0.0
+    for i, n in enumerate(ns):
+        se = sigma / np.sqrt(n)
+        dens = np.exp(-0.5 * ((x - theta) / se) ** 2) / (se * np.sqrt(2 * np.pi))
+        peak = max(peak, dens.max())
+        ax.plot(x, dens, color=cmap(i / (len(ns) - 1)), linewidth=2.2, label=f"n = {n}")
+
+    top = peak * 1.1
+    ax.set_ylim(0, top)
+    ax.axvline(theta, color=INK_SOFT, linestyle="--", linewidth=1.3, zorder=1)
+    ax.text(
+        theta - 0.06,
+        top * 0.99,
+        "true θ",
+        color=INK_SOFT,
+        fontsize=9,
+        ha="right",
+        va="top",
+    )
+
+    ax.set_xlabel("value of the estimate")
+    ax.set_ylabel("sampling density")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.set_xlim(-3.0, 3.0)
+    ax.legend(loc="upper right", title="more data")
+    fig.tight_layout()
+    return save_plot(fig, "consistency-concentration.svg")
+
+
+def fig_factorization() -> Path:
+    """Diagram: the Fisher-Neyman factorization splitting the likelihood in two."""
+    width, height = 720, 400
+    body = [eyebrow(30, 40, "THE FISHER-NEYMAN FACTORIZATION")]
+
+    # Header: the likelihood, which the split below resolves into two factors.
+    hx, hw, hy, hh = 270, 180, 66, 52
+    body += [
+        f'<rect x="{hx}" y="{hy}" width="{hw}" height="{hh}" rx="10" '
+        f'fill="#ffffff" stroke="{RULE_STRONG}" stroke-width="1.3"/>',
+        f'<text x="{hx + hw / 2:.1f}" y="{hy + 25:.1f}" font-size="15" '
+        f'font-weight="700" text-anchor="middle" fill="{INK}">likelihood</text>',
+        f'<text x="{hx + hw / 2:.1f}" y="{hy + 43:.1f}" font-size="13" '
+        f'text-anchor="middle" fill="{MUTED}">p(x | θ)</text>',
+    ]
+    body.append(
+        f'<text x="{hx + hw / 2:.1f}" y="{hy + hh + 26:.1f}" font-size="20" '
+        f'text-anchor="middle" fill="{INK_SOFT}">=</text>'
+    )
+
+    # The two factor boxes, fed by curved connectors from the "=".
+    fy, fh = hy + hh + 44, 96
+    lx, lw = 96, 250
+    rx, rw = 386, 250
+    mid = hx + hw / 2
+    for tx in (lx + lw / 2, rx + rw / 2):
+        body.append(
+            f'<path d="M {mid:.1f} {hy + hh + 34:.1f} '
+            f"C {mid:.1f} {fy - 14:.1f} {tx:.1f} {fy - 24:.1f} "
+            f'{tx:.1f} {fy - 3:.1f}" fill="none" stroke="{RULE_STRONG}" '
+            f'stroke-width="1.3"/>'
+        )
+
+    # Left factor: carries theta, sees the data only through T. The piece to keep.
+    body += [
+        f'<rect x="{lx}" y="{fy}" width="{lw}" height="{fh}" rx="10" '
+        f'fill="{ACCENT_SOFT}" stroke="{ACCENT}" stroke-width="1.5"/>',
+        f'<text x="{lx + lw / 2:.1f}" y="{fy + 32:.1f}" font-size="17" '
+        f'font-weight="700" text-anchor="middle" fill="{INK}">g( T(x), θ )</text>',
+        f'<text x="{lx + lw / 2:.1f}" y="{fy + 56:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}">θ touches the data</text>',
+        f'<text x="{lx + lw / 2:.1f}" y="{fy + 73:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}">only through T</text>',
+        f'<text x="{lx + lw / 2:.1f}" y="{fy + fh + 22:.1f}" font-size="12" '
+        f'font-weight="700" text-anchor="middle" fill="{ACCENT}">keep this</text>',
+    ]
+
+    body.append(
+        f'<text x="{(lx + lw + rx) / 2:.1f}" y="{fy + fh / 2 + 8:.1f}" '
+        f'font-size="22" text-anchor="middle" fill="{MUTED}">&#215;</text>'
+    )
+
+    # Right factor: data alone, free of theta. Discardable for inference on theta.
+    body += [
+        f'<rect x="{rx}" y="{fy}" width="{rw}" height="{fh}" rx="10" '
+        f'fill="#ffffff" stroke="{RULE_STRONG}" stroke-width="1.3"/>',
+        f'<text x="{rx + rw / 2:.1f}" y="{fy + 32:.1f}" font-size="17" '
+        f'font-weight="700" text-anchor="middle" fill="{MUTED}">h( x )</text>',
+        f'<text x="{rx + rw / 2:.1f}" y="{fy + 56:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}">data alone,</text>',
+        f'<text x="{rx + rw / 2:.1f}" y="{fy + 73:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}">free of θ</text>',
+        f'<text x="{rx + rw / 2:.1f}" y="{fy + fh + 22:.1f}" font-size="12" '
+        f'font-weight="700" text-anchor="middle" fill="{MUTED}">discardable</text>',
+    ]
+
+    return write_svg(
+        "factorization.svg",
+        svg_doc(
+            width,
+            height,
+            "The likelihood factors into a theta-bearing piece that sees the data "
+            "only through T, times a theta-free piece of the data alone.",
+            body,
+        ),
+    )
+
+
+def fig_information_curvature() -> Path:
+    """Plot: a sharp vs a flat log-likelihood, curvature and bound contrasted."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.9))
+
+    theta0 = 0.5
+    theta = np.linspace(0.18, 0.82, 400)
+    I_sharp, I_flat = 130.0, 20.0
+    ell_sharp = -0.5 * I_sharp * (theta - theta0) ** 2
+    ell_flat = -0.5 * I_flat * (theta - theta0) ** 2
+
+    ax.plot(theta, ell_sharp, color=ACCENT, lw=2.4, label="sharp: much information")
+    ax.plot(theta, ell_flat, color=AMBER, lw=2.4, label="flat: little information")
+    ax.plot([theta0], [0.0], marker="o", color=INK, markersize=7, zorder=6)
+    ax.text(
+        theta0,
+        0.30,
+        "same best estimate",
+        ha="center",
+        va="bottom",
+        color=INK_SOFT,
+        fontsize=8,
+    )
+
+    # Two nested precision intervals the peaks can afford, stacked so the narrow
+    # (sharp) and wide (flat) arrows never overlap. Half-width scales as
+    # 1/sqrt(I); the constant keeps the wider flat arrow inside the axes.
+    d_sharp = 1.25 / np.sqrt(I_sharp)
+    d_flat = 1.25 / np.sqrt(I_flat)
+    y_loose, y_tight = -1.7, -2.6
+    ax.annotate(
+        "",
+        xy=(theta0 + d_flat, y_loose),
+        xytext=(theta0 - d_flat, y_loose),
+        arrowprops=dict(arrowstyle="<->", color=AMBER, lw=1.7),
+    )
+    ax.text(
+        theta0,
+        y_loose - 0.22,
+        "loose bound",
+        ha="center",
+        va="top",
+        color=AMBER,
+        fontsize=8.5,
+        fontweight="bold",
+    )
+    ax.annotate(
+        "",
+        xy=(theta0 + d_sharp, y_tight),
+        xytext=(theta0 - d_sharp, y_tight),
+        arrowprops=dict(arrowstyle="<->", color=ACCENT, lw=1.7),
+    )
+    ax.text(
+        theta0,
+        y_tight - 0.22,
+        "tight bound",
+        ha="center",
+        va="top",
+        color=ACCENT,
+        fontsize=8.5,
+        fontweight="bold",
+    )
+
+    ax.annotate(
+        "high curvature",
+        xy=(theta0 - 0.058, -0.5 * I_sharp * 0.058**2),
+        xytext=(0.205, -0.95),
+        color=ACCENT,
+        fontsize=8.5,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "low curvature",
+        xy=(0.725, -0.5 * I_flat * (0.725 - theta0) ** 2),
+        xytext=(0.60, -0.92),
+        color=AMBER,
+        fontsize=8.5,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    ax.set_xlabel("parameter  θ")
+    ax.set_ylabel("log-likelihood  (peak set to 0)")
+    ax.set_xlim(0.18, 0.82)
+    ax.set_ylim(-4.0, 0.75)
+    ax.set_yticks([0, -1, -2, -3, -4])
+    ax.legend(loc="lower center", handlelength=1.4)
+    fig.tight_layout()
+    return save_plot(fig, "information-curvature.svg")
+
+
+def fig_prior_likelihood_posterior() -> Path:
+    """Plot: a Normal-Normal update as prior times likelihood giving the posterior."""
+    import math
+
+    style_plot()
+    x = np.linspace(-3.0, 6.0, 600)
+
+    def normal(mu, var):
+        return np.exp(-0.5 * (x - mu) ** 2 / var) / math.sqrt(2 * math.pi * var)
+
+    prior_mu, prior_var = 0.0, 1.0
+    like_mu, like_var = 3.0, 0.25  # Data mean 3 with precision 4 (n = 4, sigma^2 = 1).
+    # Posterior precision adds; the mean is the precision-weighted average.
+    post_prec = 1.0 / prior_var + 1.0 / like_var
+    post_var = 1.0 / post_prec
+    post_mu = post_var * (prior_mu / prior_var + like_mu / like_var)
+
+    prior = normal(prior_mu, prior_var)
+    like = normal(like_mu, like_var)
+    post = normal(post_mu, post_var)
+
+    fig, axes = plt.subplots(1, 3, figsize=(8.4, 2.9), sharey=True)
+    top = max(post.max(), like.max()) * 1.16
+
+    panels = (
+        (axes[0], prior, ACCENT, "prior", "belief before data", prior_mu),
+        (axes[1], like, AMBER, "likelihood", "what the data says", like_mu),
+        (axes[2], post, VIOLET, "posterior", "sharper than both", post_mu),
+    )
+    for ax, curve, color, title, sub, center in panels:
+        ax.fill_between(x, 0, curve, color=color, alpha=0.14)
+        ax.plot(x, curve, color=color, lw=2.2)
+        ax.plot(
+            [center, center],
+            [0, float(np.interp(center, x, curve))],
+            color=color,
+            lw=1.4,
+            ls=(0, (4, 3)),
+        )
+        ax.set_title(title, loc="left", color=color)
+        ax.text(0.03, 0.88, sub, transform=ax.transAxes, fontsize=8, color=MUTED)
+        ax.set_ylim(0, top)
+        ax.set_xlim(-3, 6)
+        ax.set_yticks([])
+        ax.set_xticks([0, 3])
+        ax.spines["left"].set_visible(False)
+        ax.set_xlabel("parameter  μ")
+        ax.tick_params(length=0)
+
+    # In the posterior panel, mark where the prior and the data each pulled from.
+    ax = axes[2]
+    for src in (prior_mu, like_mu):
+        ax.axvline(src, color=INK_SOFT, lw=1.0, ls=(0, (2, 3)), alpha=0.45)
+    ax.annotate(
+        "mean 2.4:\nbetween 0 and 3",
+        xy=(post_mu - 0.35, top * 0.16),
+        xytext=(-2.7, top * 0.52),
+        fontsize=8,
+        color=INK_SOFT,
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=INK_SOFT, lw=1.0),
+    )
+
+    fig.tight_layout(pad=0.6)
+    return save_plot(fig, "prior-likelihood-posterior.svg")
+
+
+def fig_posterior_summaries() -> Path:
+    """Plot: one posterior and the point summaries that each collapse it to a number."""
+    import math
+
+    style_plot()
+    a, b = 2.0, 6.0  # Beta(2, 6) posterior: skewed, so its mean and mode separate.
+    x = np.linspace(0.0, 1.0, 1000)
+    log_b = math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
+    with np.errstate(divide="ignore"):
+        pdf = np.exp((a - 1) * np.log(x) + (b - 1) * np.log(1 - x) - log_b)
+    pdf = np.nan_to_num(pdf)
+
+    mean = a / (a + b)
+    mode = (a - 1) / (a + b - 2)
+    # Central 95% credible interval read off the numerical CDF.
+    cdf = np.cumsum(pdf)
+    cdf /= cdf[-1]
+    lo = float(x[np.searchsorted(cdf, 0.025)])
+    hi = float(x[np.searchsorted(cdf, 0.975)])
+
+    fig, ax = plt.subplots(figsize=(6.6, 3.5))
+    band = (x >= lo) & (x <= hi)
+    ax.fill_between(x[band], 0, pdf[band], color=ACCENT_SOFT)
+    ax.plot(x, pdf, color=ACCENT, lw=2.2)
+
+    peak = float(pdf.max())
+    top = peak * 1.30
+    h_mode = float(np.interp(mode, x, pdf))
+    h_mean = float(np.interp(mean, x, pdf))
+    ax.plot([mode, mode], [0, h_mode], color=VIOLET, lw=1.8)
+    ax.plot([mean, mean], [0, h_mean], color=AMBER, lw=1.8, ls=(0, (4, 3)))
+
+    ax.annotate(
+        "MAP\n(posterior mode)",
+        xy=(mode, h_mode),
+        xytext=(mode - 0.03, top * 0.82),
+        ha="center",
+        fontsize=8,
+        color=VIOLET,
+        arrowprops=dict(arrowstyle="->", color=VIOLET, lw=1.0),
+    )
+    ax.annotate(
+        "posterior mean",
+        xy=(mean, h_mean),
+        xytext=(mean + 0.22, top * 0.60),
+        ha="center",
+        fontsize=8,
+        color=AMBER,
+        arrowprops=dict(arrowstyle="->", color=AMBER, lw=1.0),
+    )
+
+    # The credible interval as a bracket beneath the density.
+    y_br = -peak * 0.11
+    tick = peak * 0.03
+    ax.plot([lo, hi], [y_br, y_br], color=INK_SOFT, lw=1.4)
+    for edge in (lo, hi):
+        ax.plot([edge, edge], [y_br - tick, y_br + tick], color=INK_SOFT, lw=1.4)
+    ax.text(
+        (lo + hi) / 2,
+        y_br - peak * 0.055,
+        "95% credible interval",
+        ha="center",
+        va="top",
+        fontsize=8,
+        color=INK_SOFT,
+    )
+
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-peak * 0.30, top)
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.set_xlabel("rate  p")
+    ax.tick_params(length=0)
+    ax.set_title(
+        "The posterior is the answer; each summary is a projection of it", loc="left"
+    )
+    fig.tight_layout(pad=0.6)
+    return save_plot(fig, "posterior-summaries.svg")
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -1247,6 +1756,18 @@ FIGURES = (
     # Ch 5 · Convergence and the Limit Theorems
     fig_convergence_modes,
     fig_lln_settling,
+    # Ch 6 · What Makes a Good Estimator
+    fig_estimator_sampling_distributions,
+    fig_consistency_concentration,
+    # Ch 7 · Sufficiency and Information
+    fig_factorization,
+    fig_information_curvature,
+    # Ch 8 · Maximum Likelihood
+    fig_mle_asymptotics,
+    fig_mle_pitfalls,
+    # Ch 9 · The Bayesian View
+    fig_prior_likelihood_posterior,
+    fig_posterior_summaries,
     # Ch 12 · The Bias–Variance Tradeoff
     fig_dartboard,
     # Cover and icons

@@ -369,6 +369,220 @@
     draw(true);
   };
 
+  // Log-gamma via the Lanczos approximation; lets the Beta density stay stable
+  // for large shape parameters where factorials would overflow.
+  function lgamma(z) {
+    var g = 7;
+    var c = [
+      0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+      771.32342877765313, -176.61502916214059, 12.507343278686905,
+      -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+    ];
+    if (z < 0.5) {
+      return (
+        Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z)
+      );
+    }
+    z -= 1;
+    var x = c[0];
+    for (var i = 1; i < g + 2; i++) x += c[i] / (z + i);
+    var t = z + g + 0.5;
+    return (
+      0.5 * Math.log(2 * Math.PI) +
+      (z + 0.5) * Math.log(t) -
+      t +
+      Math.log(x)
+    );
+  }
+
+  function betaPdf(p, a, b) {
+    if (p <= 0 || p >= 1) return 0;
+    var lbeta = lgamma(a) + lgamma(b) - lgamma(a + b);
+    return Math.exp((a - 1) * Math.log(p) + (b - 1) * Math.log(1 - p) - lbeta);
+  }
+
+  // Maximum likelihood: a fixed sample from Normal(mu, 1), and the log-likelihood
+  // of that data as a function of the candidate mean mu — a concave curve whose
+  // peak sits at the sample mean, the MLE. Slide mu and climb to the top.
+  WIDGETS["mle-likelihood"] = function (figure, cap) {
+    var data = [1.2, 2.4, 1.8, 3.1, 2.0, 0.9, 2.7, 2.5];
+    var n = data.length;
+    var mle = data.reduce(function (s, v) {
+      return s + v;
+    }, 0) / n;
+    var xr = [-0.5, 4.5];
+    var yr = [-22, 1];
+
+    var loglik = function (mu) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += (data[i] - mu) * (data[i] - mu);
+      return -0.5 * s;
+    };
+
+    var cv = makeCanvas(figure, cap, 0.6);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var muInput = addSlider(
+      controls,
+      null,
+      "candidate mean&nbsp;<em>μ</em>",
+      -0.5,
+      4.5,
+      0.05,
+      0
+    );
+
+    function draw() {
+      var dim = cv.size();
+      var padL = 30;
+      var pad = 10;
+      var mx = function (x) {
+        return padL + ((x - xr[0]) * (dim.w - padL - pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 24 - ((y - yr[0]) * (dim.h - 24 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      var mu = parseFloat(muInput.value);
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      // The log-likelihood curve, and the MLE at its peak.
+      plotFn(ctx, mx, my, xr, loglik, C.ink, 2.6);
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = C.amber;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(mx(mle), my(yr[0]));
+      ctx.lineTo(mx(mle), my(loglik(mle)));
+      ctx.stroke();
+      ctx.restore();
+      dot(ctx, mx(mle), my(loglik(mle)), 5, C.amber);
+
+      // The current candidate.
+      ctx.strokeStyle = C.muted;
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.moveTo(mx(mu), my(yr[0]));
+      ctx.lineTo(mx(mu), my(yr[1]));
+      ctx.stroke();
+      dot(ctx, mx(mu), my(loglik(mu)), 5, C.accent);
+
+      // The observed data as ticks along the baseline.
+      ctx.strokeStyle = C.accent;
+      ctx.lineWidth = 2;
+      for (var i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.moveTo(mx(data[i]), my(yr[0]));
+        ctx.lineTo(mx(data[i]), my(yr[0]) - 9);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = C.muted;
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("candidate mean μ →", dim.w - pad, dim.h - 6);
+
+      readout.innerHTML =
+        '<span class="widget-num var">μ = ' +
+        fmt(mu) +
+        ",  log-likelihood = " +
+        loglik(mu).toFixed(2) +
+        "</span>" +
+        '<span class="widget-num bias">MLE μ̂ = x̄ = ' +
+        mle.toFixed(2) +
+        " (the peak)</span>";
+    }
+
+    muInput.addEventListener("input", draw);
+    window.addEventListener("resize", draw);
+    draw();
+  };
+
+  // Bayesian updating with a Beta prior and Binomial data (conjugate). Prior
+  // Beta(2, 2); after s successes and f failures the posterior is
+  // Beta(2 + s, 2 + f). Add data and watch the posterior sharpen toward the
+  // observed proportion, pulling away from the prior.
+  WIDGETS["bayes-update"] = function (figure, cap) {
+    var a0 = 2;
+    var b0 = 2;
+    var xr = [0, 1];
+    var cv = makeCanvas(figure, cap, 0.6);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var sInput = addSlider(controls, null, "successes&nbsp;<em>s</em>", 0, 40, 1, 6);
+    var fInput = addSlider(controls, null, "failures&nbsp;<em>f</em>", 0, 40, 1, 2);
+
+    function draw() {
+      var dim = cv.size();
+      var pad = 10;
+      var s = Math.round(parseFloat(sInput.value));
+      var f = Math.round(parseFloat(fInput.value));
+      var a = a0 + s;
+      var b = b0 + f;
+      var post = function (p) {
+        return betaPdf(p, a, b);
+      };
+      var prior = function (p) {
+        return betaPdf(p, a0, b0);
+      };
+      // Scale y to the posterior peak (it dominates as data grows).
+      var ymax = 1.2;
+      for (var k = 1; k < 100; k++) ymax = Math.max(ymax, post(k / 100));
+      ymax *= 1.1;
+      var yr = [0, ymax];
+      var mx = function (x) {
+        return pad + ((x - xr[0]) * (dim.w - 2 * pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      // Prior (faint amber, dashed), then posterior (bold accent).
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      plotFn(ctx, mx, my, xr, prior, C.amber, 1.6);
+      ctx.restore();
+      plotFn(ctx, mx, my, xr, post, C.accent, 2.6);
+
+      // The observed proportion the posterior concentrates toward.
+      if (s + f > 0) {
+        var prop = s / (s + f);
+        ctx.strokeStyle = C.muted;
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.moveTo(mx(prop), my(yr[0]));
+        ctx.lineTo(mx(prop), my(yr[1]));
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = C.muted;
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("rate p →", dim.w - pad, dim.h - 6);
+
+      var postMean = a / (a + b);
+      readout.innerHTML =
+        '<span class="widget-num bias">prior: Beta(2, 2)</span>' +
+        '<span class="widget-num var">posterior: Beta(' +
+        a +
+        ", " +
+        b +
+        ")</span>" +
+        '<span class="widget-num total">posterior mean = ' +
+        postMean.toFixed(3) +
+        (s + f > 0 ? ",  data rate = " + (s / (s + f)).toFixed(3) : "") +
+        "</span>";
+    }
+
+    sInput.addEventListener("input", draw);
+    fInput.addEventListener("input", draw);
+    window.addEventListener("resize", draw);
+    draw();
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {
