@@ -2480,6 +2480,561 @@ def fig_borrowing_strength() -> Path:
     )
 
 
+def fig_wilks_chi_square() -> Path:
+    """Plot: chi-square reference curves for -2 log Lambda under Wilks' theorem."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.8))
+
+    x = np.linspace(0.04, 10.0, 700)
+    root2pi = np.sqrt(2 * np.pi)
+    chi1 = x ** (-0.5) * np.exp(-x / 2) / root2pi  # df = 1.
+    chi2 = np.exp(-x / 2) / 2.0  # df = 2.
+    chi3 = x**0.5 * np.exp(-x / 2) / root2pi  # df = 3.
+
+    ax.plot(x, chi1, color=ACCENT, lw=2.4, label="χ², df = 1  (one restriction)")
+    ax.plot(x, chi2, color=AMBER, lw=2.2, label="χ², df = 2  (two restrictions)")
+    ax.plot(x, chi3, color=VIOLET, lw=2.2, label="χ², df = 3  (three restrictions)")
+
+    # The 5% critical value for df = 1, and the tail beyond it: the size-alpha region.
+    crit = 3.84
+    tail = x >= crit
+    ax.fill_between(x, 0, chi1, where=tail, color=BRICK, alpha=0.16)
+    ax.axvline(crit, color=MUTED, lw=1.0, ls=(0, (4, 3)))
+
+    ax.annotate(
+        "tail past the cutoff = α\n(reject H₀ out here)",
+        xy=(4.8, 0.018),
+        xytext=(5.5, 0.20),
+        color=BRICK,
+        fontsize=8,
+        ha="left",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.text(
+        3.66,
+        0.47,
+        "5% cutoff for df = 1\n(−2 log Λ = 3.84)",
+        color=INK_SOFT,
+        fontsize=8,
+        ha="right",
+        va="top",
+    )
+
+    ax.set_xlabel("likelihood-ratio statistic  −2 log Λ")
+    ax.set_ylabel("density under H₀")
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 0.55)
+    ax.legend(loc="upper right", handlelength=1.5)
+    fig.tight_layout()
+    return save_plot(fig, "wilks-chi-square.svg")
+
+
+def fig_pvalue_null_distribution() -> Path:
+    """Plot: the p-value is Uniform under the null, right-skewed under an effect."""
+    import math
+
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.9))
+
+    # Standard normal CDF via the complementary error function (no SciPy needed).
+    phi = np.vectorize(lambda z: 0.5 * math.erfc(-z / math.sqrt(2.0)))
+
+    rng = np.random.default_rng(0)
+    n = 300_000
+    effect = 2.6  # True effect in standard-error units; a well-powered study.
+
+    # One-sided z-test p-values: p = 1 - Phi(Z), with Z drawn under each world.
+    p_null = 1.0 - phi(rng.standard_normal(n))
+    p_alt = 1.0 - phi(rng.standard_normal(n) + effect)
+
+    bins = np.linspace(0.0, 1.0, 21)
+    d_null, _ = np.histogram(p_null, bins=bins, density=True)
+    d_alt, _ = np.histogram(p_alt, bins=bins, density=True)
+    centers = 0.5 * (bins[:-1] + bins[1:])
+
+    # Shade the p < 0.05 rejection strip.
+    ax.axvspan(0.0, 0.05, color=AMBER, alpha=0.14, linewidth=0)
+
+    ax.bar(
+        centers,
+        d_alt,
+        width=0.045,
+        color=ACCENT_SOFT,
+        edgecolor=ACCENT,
+        linewidth=1.0,
+        label="a real effect is present",
+        zorder=3,
+    )
+    ax.step(
+        bins,
+        np.append(d_null, d_null[-1]),
+        where="post",
+        color=MUTED,
+        linewidth=2.0,
+        linestyle=(0, (5, 3)),
+        label="the null is true (Uniform)",
+        zorder=4,
+    )
+
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, max(d_alt) * 1.18)
+    ax.set_xlabel("p-value")
+    ax.set_ylabel("density")
+
+    ax.annotate(
+        "5% of null p-values\nland here — that is α",
+        xy=(0.03, 1.0),
+        xytext=(0.32, max(d_alt) * 0.60),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "far more of the effect's\nmass lands here — power",
+        xy=(0.035, max(d_alt) * 0.9),
+        xytext=(0.34, max(d_alt) * 0.98),
+        color=ACCENT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=ACCENT, lw=1.0),
+    )
+    ax.legend(loc="center right")
+    fig.tight_layout()
+    return save_plot(fig, "pvalue-null-distribution.svg")
+
+
+def fig_power_curve() -> Path:
+    """Plot: statistical power climbing with sample size, at three effect sizes."""
+    import math
+
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.9))
+
+    phi = np.vectorize(lambda z: 0.5 * math.erfc(-z / math.sqrt(2.0)))
+    z_crit = 1.959963985  # Two-sided α = 0.05 critical value.
+
+    n = np.arange(4, 401)
+    effects = [
+        (0.2, "small effect (d = 0.2)", BRICK),
+        (0.5, "medium effect (d = 0.5)", AMBER),
+        (0.8, "large effect (d = 0.8)", ACCENT),
+    ]
+
+    ax.axhline(0.8, color=INK_SOFT, linewidth=1.0, linestyle=(0, (2, 3)))
+    ax.text(
+        398, 0.815, "80% target", color=INK_SOFT, fontsize=8, ha="right", va="bottom"
+    )
+
+    for d, label, color in effects:
+        ncp = d * np.sqrt(n)  # Noncentrality for a one-sample z-test in SD units.
+        power = phi(ncp - z_crit) + phi(-ncp - z_crit)
+        ax.plot(n, power, color=color, linewidth=2.4, label=label)
+        # Mark where each curve first reaches the 80% target.
+        reached = np.where(power >= 0.8)[0]
+        if len(reached):
+            i = reached[0]
+            ax.plot([n[i]], [power[i]], marker="o", color=color, markersize=6, zorder=6)
+
+    ax.set_xlim(n[0], n[-1])
+    ax.set_ylim(0.0, 1.0)
+    ax.set_xlabel("sample size  n")
+    ax.set_ylabel("power  (1 − β)")
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    return save_plot(fig, "power-curve.svg")
+
+
+def fig_false_discovery_base_rate() -> Path:
+    """Diagram: how a low base rate floods significant results with false positives."""
+    width, height = 760, 430
+    body = [eyebrow(30, 40, "A 5% TEST ON A 10% BASE RATE")]
+
+    body.append(arrow_marker(MUTED, "fdr_arrow"))
+
+    # Top box: the pool of hypotheses.
+    top_x, top_y, top_w, top_h = 300, 60, 160, 46
+    body += node_box(
+        top_x,
+        top_y,
+        top_w,
+        top_h,
+        "1000 hypotheses",
+        fill="#ffffff",
+        stroke=RULE_STRONG,
+        font_size=13,
+        weight=600,
+    )
+
+    # Second level: real effects vs no effect.
+    real_x, real_y, lvl_w, lvl_h = 130, 168, 200, 46
+    null_x = 430
+    body += node_box(
+        real_x,
+        real_y,
+        lvl_w,
+        lvl_h,
+        "100 real effects  (10%)",
+        fill=ACCENT_SOFT,
+        stroke=ACCENT,
+        text_fill=ACCENT,
+        font_size=12,
+        weight=600,
+    )
+    body += node_box(
+        null_x,
+        real_y,
+        lvl_w,
+        lvl_h,
+        "900 no effect",
+        fill="#ffffff",
+        stroke=RULE_STRONG,
+        text_fill=MUTED,
+        font_size=12,
+        weight=600,
+    )
+    # Arrows from top to the two branches.
+    body.append(
+        f'<line x1="{top_x + 40:.1f}" y1="{top_y + top_h:.1f}" '
+        f'x2="{real_x + lvl_w / 2:.1f}" y2="{real_y:.1f}" stroke="{MUTED}" '
+        f'stroke-width="1.4" marker-end="url(#fdr_arrow)"/>'
+    )
+    body.append(
+        f'<line x1="{top_x + top_w - 40:.1f}" y1="{top_y + top_h:.1f}" '
+        f'x2="{null_x + lvl_w / 2:.1f}" y2="{real_y:.1f}" stroke="{MUTED}" '
+        f'stroke-width="1.4" marker-end="url(#fdr_arrow)"/>'
+    )
+
+    # Third level: significant results from each branch.
+    sig_y, sig_w, sig_h = 276, 200, 46
+    body += node_box(
+        real_x,
+        sig_y,
+        sig_w,
+        sig_h,
+        "≈ 80 significant  (power 80%)",
+        fill=ACCENT_SOFT,
+        stroke=ACCENT,
+        text_fill=ACCENT,
+        font_size=11.5,
+        weight=600,
+    )
+    body += node_box(
+        null_x,
+        sig_y,
+        sig_w,
+        sig_h,
+        "≈ 45 significant  (α = 5%)",
+        fill="#fbe9e6",
+        stroke=BRICK,
+        text_fill=BRICK,
+        font_size=11.5,
+        weight=600,
+    )
+    body.append(
+        f'<line x1="{real_x + lvl_w / 2:.1f}" y1="{real_y + lvl_h:.1f}" '
+        f'x2="{real_x + sig_w / 2:.1f}" y2="{sig_y:.1f}" stroke="{ACCENT}" '
+        f'stroke-width="1.4" marker-end="url(#fdr_arrow)"/>'
+    )
+    body.append(
+        f'<line x1="{null_x + lvl_w / 2:.1f}" y1="{real_y + lvl_h:.1f}" '
+        f'x2="{null_x + sig_w / 2:.1f}" y2="{sig_y:.1f}" stroke="{BRICK}" '
+        f'stroke-width="1.4" marker-end="url(#fdr_arrow)"/>'
+    )
+    body.append(
+        f'<text x="{real_x + sig_w / 2:.1f}" y="{sig_y + sig_h + 18:.1f}" '
+        f'font-size="10.5" text-anchor="middle" fill="{ACCENT}">true positives</text>'
+    )
+    body.append(
+        f'<text x="{null_x + sig_w / 2:.1f}" y="{sig_y + sig_h + 18:.1f}" '
+        f'font-size="10.5" text-anchor="middle" fill="{BRICK}">false positives</text>'
+    )
+
+    # Summary bar.
+    bar_x, bar_y, bar_w, bar_h = 130, 360, 500, 34
+    tp_frac = 80.0 / 125.0
+    body.append(
+        f'<rect x="{bar_x:.1f}" y="{bar_y:.1f}" width="{bar_w * tp_frac:.1f}" '
+        f'height="{bar_h}" rx="4" fill="{ACCENT}"/>'
+    )
+    body.append(
+        f'<rect x="{bar_x + bar_w * tp_frac:.1f}" y="{bar_y:.1f}" '
+        f'width="{bar_w * (1 - tp_frac):.1f}" height="{bar_h}" rx="4" fill="{BRICK}"/>'
+    )
+    body.append(
+        f'<text x="{bar_x + bar_w * tp_frac / 2:.1f}" y="{bar_y + bar_h / 2 + 4:.1f}" '
+        f'font-size="11" text-anchor="middle" fill="#ffffff" font-weight="600">80 true</text>'
+    )
+    body.append(
+        f'<text x="{bar_x + bar_w * tp_frac + bar_w * (1 - tp_frac) / 2:.1f}" '
+        f'y="{bar_y + bar_h / 2 + 4:.1f}" font-size="11" text-anchor="middle" '
+        f'fill="#ffffff" font-weight="600">45 false</text>'
+    )
+    body.append(
+        f'<text x="{bar_x + bar_w:.1f}" y="{bar_y - 8:.1f}" font-size="11.5" '
+        f'text-anchor="end" fill="{INK_SOFT}" font-weight="600">'
+        f"125 significant results → 36% are false discoveries</text>"
+    )
+
+    svg = svg_doc(width, height, "Base-rate flow showing false discoveries", body)
+    return write_svg("false-discovery-base-rate.svg", svg)
+
+
+def fig_coverage_intervals() -> Path:
+    """Plot: many 95% intervals from repeated samples against the one fixed truth."""
+    style_plot()
+    rng = np.random.default_rng(4)
+    true_theta = 0.0  # The one fixed parameter every interval is trying to trap.
+    n = 25
+    sigma = 1.0
+    se = sigma / np.sqrt(n)
+    z = 1.96  # The normal quantile behind a 95% interval.
+    n_rep = 22
+
+    fig, ax = plt.subplots(figsize=(6.2, 5.4))
+    n_miss = 0
+    for i in range(n_rep):
+        xbar = rng.normal(true_theta, se)
+        lo, hi = xbar - z * se, xbar + z * se
+        y = n_rep - i
+        covers = lo <= true_theta <= hi
+        color = ACCENT if covers else BRICK
+        if not covers:
+            n_miss += 1
+        ax.plot(
+            [lo, hi],
+            [y, y],
+            color=color,
+            linewidth=2.2,
+            solid_capstyle="round",
+            alpha=0.5 if not covers else 0.9,
+        )
+        ax.plot([xbar], [y], marker="o", color=color, markersize=3.4, zorder=5)
+
+    ax.axvline(true_theta, color=INK_SOFT, linestyle="--", linewidth=1.4, zorder=1)
+    ax.text(
+        true_theta + 0.01,
+        n_rep + 0.9,
+        "the fixed truth θ",
+        color=INK_SOFT,
+        fontsize=8.5,
+        ha="left",
+        va="center",
+    )
+    n_cover = n_rep - n_miss
+    ax.set_title(
+        f"{n_cover} of {n_rep} intervals catch θ; {n_miss} miss (red)", loc="left"
+    )
+    ax.set_xlabel("value of the parameter")
+    ax.set_ylabel("independent repetition of the experiment")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0, axis="y")
+    ax.set_ylim(0.2, n_rep + 2.0)
+    fig.tight_layout()
+    return save_plot(fig, "coverage-intervals.svg")
+
+
+def fig_credible_intervals() -> Path:
+    """Plot: equal-tailed vs highest-posterior-density 95% intervals on a skew posterior."""
+    style_plot()
+    k, theta = 2.0, 1.0  # A right-skewed posterior: mode at 1, long right tail.
+    x = np.linspace(0.0, 9.0, 4000)
+    dens = _gamma_pdf(x, k, theta)
+    dx = x[1] - x[0]
+    cdf = np.cumsum(dens) * dx
+
+    def quantile(p):
+        return float(x[np.searchsorted(cdf, p)])
+
+    # Equal-tailed interval: chop 2.5% of probability off each tail.
+    et_lo, et_hi = quantile(0.025), quantile(0.975)
+
+    # HPD interval as a density level set: lower a horizontal water level until the
+    # mass above it reaches 95%. For a unimodal density the region above the level
+    # is a single interval whose two ends sit at equal density.
+    target = 0.95
+    lo_h, hi_h = 0.0, float(dens.max())
+    for _ in range(80):
+        h = 0.5 * (lo_h + hi_h)
+        mass = float(dens[dens >= h].sum() * dx)
+        if mass > target:
+            lo_h = h
+        else:
+            hi_h = h
+    hpd_level = 0.5 * (lo_h + hi_h)
+    above = np.where(dens >= hpd_level)[0]
+    hpd_lo, hpd_hi = float(x[above[0]]), float(x[above[-1]])
+
+    fig, (ax_top, ax_bot) = plt.subplots(
+        2, 1, figsize=(6.0, 5.4), sharex=True, gridspec_kw={"hspace": 0.34}
+    )
+
+    # Top: equal-tailed. Symmetric probability, asymmetric interval on a skew.
+    ax_top.plot(x, dens, color=ACCENT, linewidth=2.2)
+    m = (x >= et_lo) & (x <= et_hi)
+    ax_top.fill_between(x[m], 0, dens[m], color=ACCENT_SOFT)
+    for xb in (et_lo, et_hi):
+        ax_top.plot(
+            [xb, xb],
+            [0, dens[np.searchsorted(x, xb)]],
+            color=VIOLET,
+            linewidth=1.3,
+            linestyle=(0, (4, 3)),
+        )
+    ax_top.text(
+        et_lo, -0.03, f"{et_lo:.2f}", color=VIOLET, fontsize=7.5, ha="center", va="top"
+    )
+    ax_top.text(
+        et_hi, -0.03, f"{et_hi:.2f}", color=VIOLET, fontsize=7.5, ha="center", va="top"
+    )
+    ax_top.annotate("2.5%", xy=(0.32, 0.02), color=MUTED, fontsize=7, ha="center")
+    ax_top.annotate(
+        "2.5%", xy=(et_hi + 0.45, 0.02), color=MUTED, fontsize=7, ha="center"
+    )
+    ax_top.set_title("Equal-tailed: equal probability cut from each tail", loc="left")
+    ax_top.set_ylabel("posterior density")
+
+    # Bottom: HPD. A flat water level; the ends sit at equal height, interval shorter.
+    ax_bot.plot(x, dens, color=ACCENT, linewidth=2.2)
+    m2 = (x >= hpd_lo) & (x <= hpd_hi)
+    ax_bot.fill_between(x[m2], 0, dens[m2], color="#f0e2c8")
+    ax_bot.axhline(hpd_level, color=AMBER, linewidth=1.2, linestyle=(0, (4, 3)))
+    ax_bot.text(
+        8.8,
+        hpd_level + 0.007,
+        "equal density at the two ends",
+        color=AMBER,
+        fontsize=7.5,
+        ha="right",
+        va="bottom",
+    )
+    for xb in (hpd_lo, hpd_hi):
+        ax_bot.plot([xb, xb], [0, hpd_level], color=AMBER, linewidth=1.4)
+    ax_bot.text(
+        hpd_lo, -0.03, f"{hpd_lo:.2f}", color=AMBER, fontsize=7.5, ha="center", va="top"
+    )
+    ax_bot.text(
+        hpd_hi, -0.03, f"{hpd_hi:.2f}", color=AMBER, fontsize=7.5, ha="center", va="top"
+    )
+    ax_bot.set_title(
+        "Highest posterior density: shortest interval holding 95%", loc="left"
+    )
+    ax_bot.set_ylabel("posterior density")
+    ax_bot.set_xlabel("parameter value")
+
+    for ax in (ax_top, ax_bot):
+        ax.set_ylim(0, 0.42)
+        ax.set_xlim(0, 9)
+        ax.set_yticks([])
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(length=0, axis="y")
+
+    return save_plot(fig, "credible-intervals.svg")
+
+
+def fig_test_interval_duality() -> Path:
+    """Diagram: invert a test — the null values whose test accepts form the interval."""
+    width, height = 760, 470
+    body = [eyebrow(30, 40, "AN INTERVAL IS A FAMILY OF TESTS")]
+
+    # Statistic space runs left to right in pixels; each row is a candidate null
+    # value theta0 whose level-alpha test either accepts or rejects the one observed
+    # estimate. The rows whose acceptance band covers the estimate are the interval.
+    stat_lo, stat_hi = -5.0, 9.0
+    px_lo, px_hi = 236.0, 690.0
+    sx = (px_hi - px_lo) / (stat_hi - stat_lo)
+
+    def xof(v):
+        return px_lo + (v - stat_lo) * sx
+
+    x_obs = 2.0  # The single observed estimate, fixed across every row.
+    c = 2.4  # Half-width of each test's acceptance region, in statistic units.
+    theta0s = [6, 5, 4, 3, 2, 1, 0, -1, -2]
+    y0, step = 74, 40
+    x_obs_px = xof(x_obs)
+
+    accepted_rows = []
+    for i, t0 in enumerate(theta0s):
+        y = y0 + i * step
+        center = xof(t0)
+        lo, hi = center - c * sx, center + c * sx
+        accept = lo <= x_obs_px <= hi
+        color = ACCENT if accept else BRICK
+        if accept:
+            accepted_rows.append((i, y, t0))
+        body.append(
+            f'<text x="150" y="{y + 4:.1f}" font-size="12.5" text-anchor="end" '
+            f'fill="{INK if accept else MUTED}" font-weight="{700 if accept else 400}">'
+            f"θ₀ = {t0}</text>"
+        )
+        body.append(
+            f'<line x1="{lo:.1f}" y1="{y:.1f}" x2="{hi:.1f}" y2="{y:.1f}" '
+            f'stroke="{color}" stroke-width="6" stroke-linecap="round" '
+            f'opacity="{0.9 if accept else 0.38}"/>'
+        )
+        if accept:
+            body.append(
+                f'<text x="714" y="{y + 5:.1f}" font-size="15" text-anchor="middle" '
+                f'fill="{ACCENT}" font-weight="700">✓</text>'
+            )
+        else:
+            body.append(
+                f'<text x="714" y="{y + 5:.1f}" font-size="15" text-anchor="middle" '
+                f'fill="{BRICK}" opacity="0.7">✗</text>'
+            )
+
+    # The fixed observed estimate: one vertical line through every row.
+    top_y = y0 - 24
+    bot_y = y0 + (len(theta0s) - 1) * step + 24
+    body.append(
+        f'<line x1="{x_obs_px:.1f}" y1="{top_y:.1f}" x2="{x_obs_px:.1f}" '
+        f'y2="{bot_y:.1f}" stroke="{INK_SOFT}" stroke-width="1.6" '
+        f'stroke-dasharray="5 4"/>'
+    )
+    body.append(
+        f'<text x="{x_obs_px:.1f}" y="{top_y - 6:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}" font-weight="600">observed estimate</text>'
+    )
+
+    # Bracket the accepted rows on the left as the confidence interval.
+    if accepted_rows:
+        y_top = accepted_rows[0][1] - step / 2
+        y_bot = accepted_rows[-1][1] + step / 2
+        bx = 170
+        body.append(
+            f'<path d="M {bx + 10:.1f} {y_top:.1f} H {bx:.1f} V {y_bot:.1f} '
+            f'H {bx + 10:.1f}" fill="none" stroke="{ACCENT}" stroke-width="1.6"/>'
+        )
+        ymid = (y_top + y_bot) / 2
+        body.append(
+            f'<text x="{bx - 8:.1f}" y="{ymid:.1f}" font-size="11" '
+            f'text-anchor="middle" fill="{ACCENT}" font-weight="700" '
+            f'transform="rotate(-90 {bx - 8:.1f} {ymid:.1f})">1−α interval</text>'
+        )
+
+    body.append(
+        f'<text x="{(px_lo + px_hi) / 2:.1f}" y="{bot_y + 34:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{INK_SOFT}">Each row tests H₀: θ = θ₀. '
+        f"The un-rejected θ₀ (blue, ✓) are the interval.</text>"
+    )
+
+    return write_svg(
+        "test-interval-duality.svg",
+        svg_doc(
+            width,
+            height,
+            "A stack of candidate null values, each with an acceptance band in "
+            "statistic space; the fixed observed estimate falls inside some bands "
+            "and not others, and the null values whose test accepts form the "
+            "confidence interval.",
+            body,
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -2680,6 +3235,16 @@ FIGURES = (
     fig_kfold_schematic,
     fig_cross_validation_curve,
     fig_effective_degrees_of_freedom,
+    # Ch 16 · Hypothesis Testing
+    fig_wilks_chi_square,
+    # Ch 17 · P-values, Power, and Errors
+    fig_pvalue_null_distribution,
+    fig_false_discovery_base_rate,
+    fig_power_curve,
+    # Ch 18 · Confidence and Credible Intervals
+    fig_coverage_intervals,
+    fig_credible_intervals,
+    fig_test_interval_duality,
     # Cover and icons
     fig_cover,
     fig_icon,

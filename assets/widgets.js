@@ -824,6 +824,153 @@
     draw();
   };
 
+  // Standard-normal density and CDF. The CDF uses the Abramowitz & Stegun
+  // 7.1.26 rational approximation to erf (absolute error < 1.5e-7), which is far
+  // finer than a pixel here.
+  function stdNormPdf(x) {
+    return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+  }
+  function erf(x) {
+    var s = x < 0 ? -1 : 1;
+    var ax = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * ax);
+    var y =
+      1 -
+      ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) *
+        t +
+        0.254829592) *
+        t *
+        Math.exp(-ax * ax);
+    return s * y;
+  }
+  function stdNormCdf(x) {
+    return 0.5 * (1 + erf(x / Math.SQRT2));
+  }
+
+  // Fill the area under y = f(x) for x in [lo, hi], down to the baseline yBase.
+  function fillUnder(ctx, mx, my, f, lo, hi, yBase, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(mx(lo), my(yBase));
+    var n = 160;
+    for (var i = 0; i <= n; i++) {
+      var x = lo + ((hi - lo) * i) / n;
+      ctx.lineTo(mx(x), my(f(x)));
+    }
+    ctx.lineTo(mx(hi), my(yBase));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // The Neyman–Pearson tradeoff for testing H0: mean = 0 against H1: mean = d,
+  // both Normal with unit variance, using the one-sided test that rejects when
+  // X exceeds a threshold c (the UMP test here). The null's right tail past c is
+  // the Type I rate alpha; the alternative's left tail below c is the Type II
+  // rate beta; power is 1 - beta. Drag the threshold to trade alpha against beta,
+  // and widen the separation d to see both shrink at once.
+  WIDGETS["neyman-pearson"] = function (figure, cap) {
+    var xr = [-4, 8];
+    var yr = [0, 0.46];
+
+    var cv = makeCanvas(figure, cap, 0.62);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var cInput = addSlider(
+      controls,
+      null,
+      "threshold&nbsp;<em>c</em>",
+      -3,
+      6,
+      0.05,
+      1.5
+    );
+    var dInput = addSlider(
+      controls,
+      null,
+      "separation&nbsp;<em>d</em>",
+      0.5,
+      4,
+      0.05,
+      2.5
+    );
+
+    function draw() {
+      var dim = cv.size();
+      var padL = 18;
+      var pad = 10;
+      var mx = function (x) {
+        return padL + ((x - xr[0]) * (dim.w - padL - pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      var c = parseFloat(cInput.value);
+      var d = parseFloat(dInput.value);
+      var nullPdf = function (x) {
+        return stdNormPdf(x);
+      };
+      var altPdf = function (x) {
+        return stdNormPdf(x - d);
+      };
+
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      // Type II area (beta): the alternative's mass below the threshold.
+      fillUnder(ctx, mx, my, altPdf, xr[0], c, yr[0], C.accentSoft);
+      // Type I area (alpha): the null's mass above the threshold, drawn with a
+      // hatch-like translucent amber so the overlap with beta stays legible.
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      fillUnder(ctx, mx, my, nullPdf, c, xr[1], yr[0], "#e3c58a");
+      ctx.restore();
+
+      // The two densities.
+      plotFn(ctx, mx, my, xr, nullPdf, C.ink, 2.4);
+      plotFn(ctx, mx, my, xr, altPdf, C.accent, 2.4);
+
+      // The decision threshold.
+      ctx.strokeStyle = C.muted;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(mx(c), my(yr[0]));
+      ctx.lineTo(mx(c), my(yr[1]));
+      ctx.stroke();
+
+      // Curve labels riding near each peak.
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = C.ink;
+      ctx.fillText("H₀ (null)", mx(0), my(stdNormPdf(0)) - 6);
+      ctx.fillStyle = C.accent;
+      ctx.fillText("H₁ (alt)", mx(d), my(stdNormPdf(0)) - 6);
+
+      ctx.fillStyle = C.muted;
+      ctx.textAlign = "right";
+      ctx.fillText("reject H₀ →", dim.w - pad, dim.h - 6);
+      ctx.textAlign = "left";
+      ctx.fillText("← accept H₀", padL, dim.h - 6);
+
+      var alpha = 1 - stdNormCdf(c);
+      var beta = stdNormCdf(c - d);
+      readout.innerHTML =
+        '<span class="widget-num bias">α (Type I) = ' +
+        alpha.toFixed(3) +
+        "</span>" +
+        '<span class="widget-num var">β (Type II) = ' +
+        beta.toFixed(3) +
+        "</span>" +
+        '<span class="widget-num total">power = 1 − β = ' +
+        (1 - beta).toFixed(3) +
+        "</span>";
+    }
+
+    cInput.addEventListener("input", draw);
+    dInput.addEventListener("input", draw);
+    window.addEventListener("resize", draw);
+    draw();
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {

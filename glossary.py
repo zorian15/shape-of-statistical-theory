@@ -432,6 +432,166 @@ _TERMS: tuple[Term, ...] = (
         "Degrees of freedom",
         "The number of independent directions in which a fit is free to move to chase the data. For an unpenalized linear model it equals the parameter count; regularization replaces it with a smaller effective count.",
     ),
+    Term(
+        "Null hypothesis",
+        "The default, incumbent claim about a model's parameter that you keep unless the data forces you off it (the coin is fair, the drug does nothing). Its false rejection is the error a test is built to control.",
+    ),
+    Term(
+        "Alternative hypothesis",
+        "The rival claim you would switch to if the data discredits the null; together the two hypotheses are the competing worlds a test decides between.",
+    ),
+    Term(
+        "Simple hypothesis",
+        "A hypothesis that pins the distribution down completely, naming one exact distribution with no free parameter left. The Neyman–Pearson lemma solves the simple-versus-simple case exactly.",
+    ),
+    Term(
+        "Composite hypothesis",
+        "A hypothesis that only confines the parameter to a set of values (for example, the mean is positive), so it stands for a whole family of distributions rather than one.",
+    ),
+    Term(
+        "Hypothesis test",
+        "A decision rule that partitions the space of possible datasets into a rejection region and its complement, returning one of two verdicts: reject the null or fail to reject it.",
+    ),
+    Term(
+        "Rejection region",
+        "The set of datasets for which a test rejects the null hypothesis; observing data inside it triggers rejection, and its null probability is the test's size.",
+    ),
+    Term(
+        "Type I error",
+        "Rejecting the null hypothesis when it is in fact true — a false alarm. Its probability is the size of the test, denoted alpha.",
+    ),
+    Term(
+        "Type II error",
+        "Failing to reject the null hypothesis when the alternative is in fact true — a miss. Its probability is denoted beta, and its complement is the power.",
+    ),
+    Term(
+        "Power",
+        "The probability that a test rejects the null when the alternative is true, equal to one minus the Type II error rate. Neyman–Pearson maximizes it subject to a fixed cap on the Type I rate.",
+    ),
+    Term(
+        "Size",
+        "The actual worst-case Type I error rate of a test — for a composite null, the largest rejection probability over every parameter value the null allows. It is what the test really does, as opposed to the level it promises.",
+    ),
+    Term(
+        "Level",
+        "The promised upper bound on a test's Type I error rate; a test has level alpha when its size is at most alpha. Size and level coincide for a well-calibrated test and diverge for a conservative one.",
+    ),
+    Term(
+        "Most powerful test",
+        "Among all tests of a given level, the one with the largest power against a specified alternative. The Neyman–Pearson lemma identifies it as the likelihood ratio test for simple-versus-simple problems.",
+    ),
+    Term(
+        "Uniformly most powerful test",
+        "A test that is most powerful simultaneously against every alternative in a composite family, not just one. It exists for one-sided alternatives when the family has a monotone likelihood ratio, but generally fails for two-sided alternatives.",
+    ),
+    Term(
+        "Neyman–Pearson lemma",
+        "The result that, for testing a simple null against a simple alternative, the likelihood ratio test is the most powerful test of its size — no other test with the same Type I rate achieves higher power.",
+    ),
+    Term(
+        "Likelihood ratio",
+        "The ratio of the data's likelihood under the alternative to its likelihood under the null. A large value means the alternative explained the observed data far better, and ranking the sample space by it is the optimal way to spend a Type I error budget.",
+    ),
+    Term(
+        "Likelihood ratio test",
+        "A test that rejects the null exactly when the likelihood ratio exceeds a threshold, the threshold chosen so the false-alarm rate equals the target size. It is the most powerful test for simple-versus-simple problems.",
+    ),
+    Term(
+        "Monotone likelihood ratio",
+        "A property of a parametric family in which the likelihood ratio between any two parameter values is a monotone function of a single statistic. It lets a one-sided likelihood ratio test be uniformly most powerful (Karlin–Rubin).",
+    ),
+    Term(
+        "Generalized likelihood ratio test",
+        "A general-purpose test that compares the maximized likelihood under the null to the maximized likelihood over the whole parameter space, plugging in maximum likelihood estimates for unknown parameters. Small values of the ratio are evidence against the null.",
+    ),
+    Term(
+        "Wilks' theorem",
+        "The result that, under regularity conditions and for nested models, the statistic minus two log Lambda converges under the null to a chi-square distribution whose degrees of freedom equal the number of parameters the null fixes. It fails when the null lies on a boundary of the parameter space.",
+    ),
+    Term(
+        "p-value",
+        "The probability, computed assuming the null hypothesis is true, of observing a test statistic at least as extreme as the one you got; small values indicate the data sit far out in the tail the null predicts.",
+    ),
+    Term(
+        "Statistical significance",
+        "The verdict that a p-value falls below a chosen threshold (commonly 0.05), meaning the result is distinguishable from the null at that level; it is a claim about detectability, not about the size or importance of an effect.",
+    ),
+    Term(
+        "Effect size",
+        "The true magnitude of the effect a study is trying to detect, often expressed in standard-deviation units so it is comparable across problems; larger effects require less data to detect.",
+    ),
+    Term(
+        "Base rate",
+        "The fraction of the hypotheses you test that correspond to real effects; when it is low, even a well-calibrated test yields many false positives relative to true ones.",
+    ),
+    Term(
+        "False discovery rate (FDR)",
+        "The expected fraction of your rejected hypotheses that are actually false positives; controlling it (as the Benjamini–Hochberg procedure does) tolerates some false positives in exchange for more discoveries.",
+    ),
+    Term(
+        "Family-wise error rate (FWER)",
+        "The probability of making even one false rejection across an entire family of tests; the Bonferroni correction controls it by testing each of m hypotheses at level α/m.",
+    ),
+    Term(
+        "Bonferroni correction",
+        "A multiple-testing fix that tests each of m hypotheses at level α/m so the family-wise error rate stays below α; simple and strict, but severely underpowered when m is large.",
+    ),
+    Term(
+        "Benjamini–Hochberg procedure",
+        "A multiple-testing procedure that controls the false discovery rate by sorting the p-values and rejecting the largest run for which the i-th smallest satisfies p ≤ (i/m)α; far more powerful than Bonferroni on large screens.",
+    ),
+    Term(
+        "Multiple testing",
+        "Running many hypothesis tests at once, which multiplies the chances of a false positive; it requires a correction (controlling either the family-wise error rate or the false discovery rate) to keep errors in check.",
+    ),
+    Term(
+        "Type M error",
+        "A magnitude error: reporting an effect whose estimated size is badly off from the truth, typically inflated, because in a low-power study only the largest estimates reach significance.",
+    ),
+    Term(
+        "Type S error",
+        "A sign error: reporting an effect in the wrong direction, for instance a benefit that is really a harm; more likely in underpowered studies.",
+    ),
+    Term(
+        "p-hacking",
+        "Consciously or not, trying analyses — dropping outliers, adding covariates, testing subgroups, stopping when the data look good — until a result crosses the significance threshold, which invalidates the p-value's guarantee.",
+    ),
+    Term(
+        "Winner's curse (in estimation)",
+        "The upward bias in an effect estimate that arises when only results clearing a significance bar are reported, so the surviving estimates are a selected, inflated sample of the truth.",
+    ),
+    Term(
+        "Confidence interval",
+        "A data-driven interval built by a recipe whose long-run guarantee is that the random interval it produces covers the fixed true parameter a stated fraction of the time. The stated fraction describes the procedure across repeated samples, not the chance that any one observed interval contains the parameter.",
+    ),
+    Term(
+        "Coverage",
+        "The probability, computed over the sampling distribution of the data, that a confidence procedure's random interval contains the fixed parameter. A valid procedure holds coverage at its confidence level for every parameter value.",
+    ),
+    Term(
+        "Confidence level",
+        "The target coverage 1 minus alpha that a confidence procedure promises, such as 95%. It is a property of the interval-making rule, not of any single interval it outputs.",
+    ),
+    Term(
+        "Pivotal quantity",
+        "A function of both the data and the parameter whose probability distribution does not depend on the parameter. Bracketing its fixed quantiles and solving for the parameter yields a confidence interval with exact coverage.",
+    ),
+    Term(
+        "Equal-tailed interval",
+        "A credible interval that removes an equal share of posterior probability from each tail, running from the alpha-over-two quantile to the one-minus-alpha-over-two quantile of the posterior. On a skewed posterior it is generally longer than, and shifted from, the highest posterior density interval.",
+    ),
+    Term(
+        "Highest posterior density interval (HPD)",
+        "The shortest interval containing a stated share of the posterior probability; equivalently, the set of parameter values whose posterior density exceeds a threshold, so its two endpoints sit at equal density. It coincides with the equal-tailed interval only when the posterior is symmetric and unimodal.",
+    ),
+    Term(
+        "Acceptance region",
+        "For a hypothesis test of a given null value, the set of data outcomes that do not lead to rejection. Collecting the null values whose acceptance region contains the observed data produces the confidence set (test-interval duality).",
+    ),
+    Term(
+        "Test-interval duality",
+        "The equivalence between hypothesis tests and confidence sets: the 1 minus alpha confidence set is exactly the set of null values a level-alpha test would not reject, and inverting a confidence procedure recovers a family of tests. It is why a value lies outside the interval precisely when the corresponding test rejects it.",
+    ),
 )
 
 

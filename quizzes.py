@@ -51,6 +51,350 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "hypothesis-testing": (
+        Question(
+            prompt="In the Neyman–Pearson framework you fix the size alpha and then maximize power, rather than minimizing the total error rate alpha + beta. What does this choice actually encode?",
+            options=(
+                "A deliberate asymmetry: falsely rejecting a true null is judged the costlier error, so its rate is capped no matter which alternative holds, and power is optimized only under that cap.",
+                "A proof that alpha + beta cannot be minimized because beta depends on the unknown true alternative while alpha does not.",
+                "A convention that keeps the math tractable but has no decision-theoretic content, since any monotone criterion gives the same test.",
+                "An assumption that the null and alternative are equally likely a priori, which is what makes the likelihood ratio threshold equal to one.",
+            ),
+            answer=0,
+            explanation="Fixing alpha treats the two errors asymmetrically on purpose: rejecting a true null is the error you have decided is worse, so you bound it uniformly over the null and do the best you can on beta. Minimizing alpha + beta is itself well defined and corresponds to a Bayes rule under equal losses and equal priors — its threshold is likelihood ratio = 1 — but that is a different, symmetric problem, which is exactly what Neyman–Pearson declines to assume.",
+        ),
+        Question(
+            prompt="The Neyman–Pearson lemma guarantees the likelihood ratio test is most powerful. For which testing problem does that guarantee hold exactly?",
+            options=(
+                "A simple null against a simple alternative, where each hypothesis names one fully specified distribution.",
+                "Any null against any alternative, provided the sample size is large enough for the asymptotics to kick in.",
+                "A simple null against a one-sided composite alternative, for every parametric family without exception.",
+                "A composite null against a composite alternative, as long as both are drawn from an exponential family.",
+            ),
+            answer=0,
+            explanation="The lemma is a simple-versus-simple result: both hypotheses must be single, fully specified distributions. It extends to a one-sided composite alternative only under the extra structure of a monotone likelihood ratio (Karlin–Rubin), and that yields a uniformly most powerful test — it is not automatic for every family, and it does not survive two-sided alternatives.",
+        ),
+        Question(
+            prompt="A test is described as having 'level 0.05' but 'size 0.03'. What is the relationship being expressed?",
+            options=(
+                "The level is the promised upper bound on the Type I error rate, while the size is the test's actual worst-case Type I rate; here the test is conservative, spending less alpha than allowed.",
+                "The level is the Type I error rate and the size is the Type II error rate, so the test rejects true nulls 5% of the time and misses real effects 3% of the time.",
+                "The size is the false-alarm rate at the observed data and the level is its long-run average, so the two differ only by sampling noise.",
+                "The level applies before seeing data and the size after, so the size is the posterior probability that the null is true given this sample.",
+            ),
+            answer=0,
+            explanation="Size is the supremum of the rejection probability over the null — what the test really does — while level is the ceiling you claim for it; a test has level alpha when its size is at most alpha. A size below the level means the test is conservative and is leaving power on the table. Neither quantity is a Type II rate or a posterior probability of the null.",
+        ),
+        Question(
+            prompt="You run a generalized likelihood ratio test comparing a full model with 6 free parameters to a nested null that fixes 2 of them. Under Wilks' theorem and its regularity conditions, what is the reference distribution for −2 log Λ?",
+            options=(
+                "Chi-square with 2 degrees of freedom, the number of parameters the null fixes.",
+                "Chi-square with 6 degrees of freedom, the number of free parameters in the full model.",
+                "Chi-square with 4 degrees of freedom, the number of parameters left free under the null.",
+                "Chi-square with degrees of freedom equal to the sample size minus 6, as in a residual variance estimate.",
+            ),
+            answer=0,
+            explanation="The degrees of freedom equal the drop in dimension from the full model to the null — the number of restrictions imposed, here 2 — not the total parameter count and not the sample size. Miscounting restrictions mis-calibrates every resulting p-value, and the chi-square itself is only the large-sample limit, valid when the null lies in the interior of the parameter space.",
+        ),
+        Question(
+            prompt="You test whether a variance component equals zero using −2 log Λ against a chi-square with 1 degree of freedom. A colleague warns the calibration is wrong. Why?",
+            options=(
+                "Because a variance cannot be negative, the null sits on the boundary of the parameter space, so the limit is a mixture of a point mass at zero and a chi-square rather than a plain chi-square.",
+                "Because variance-component models are never nested, so Wilks' theorem does not apply and only information criteria can compare them.",
+                "Because the likelihood ratio is undefined when a parameter equals zero, so the statistic must be computed on the log-variance scale instead.",
+                "Because testing a variance requires an F distribution, not a chi-square, whenever the residual degrees of freedom are finite.",
+            ),
+            answer=0,
+            explanation="Zero is a boundary for a variance, which violates the interior-point regularity condition behind Wilks' theorem. Chernoff's result gives the correct limit — often a 50:50 mixture of a spike at zero and a chi-square with one degree of freedom — so using the naive chi-square makes the test conservative and costs power. The models here are genuinely nested; the problem is the boundary, not nesting.",
+        ),
+    ),
+    "p-values-power-and-errors": (
+        Question(
+            prompt=(
+                "A study reports p = 0.01. Which statement correctly describes what "
+                "that number means?"
+            ),
+            options=(
+                "There is only a 1% probability that the null hypothesis is true, given the specific data actually observed in this particular study.",
+                "Assuming the null is true, data at least this extreme would arise about 1% of the time.",
+                "The effect has a 99% chance of replicating in a new experiment.",
+                "The measured effect is large enough to be practically important.",
+            ),
+            answer=1,
+            explanation=(
+                "A p-value is computed assuming the null holds; it is the tail probability "
+                "of a test statistic at least as extreme as observed. It conditions on the "
+                "null, so it is not the probability the null is true (that would need a prior "
+                "and Bayes' rule). It is not a replication probability, which depends on the "
+                "true effect and the new study's power, and it is not an effect size — a huge "
+                "sample can make a trivial effect cross any threshold."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Why is the p-value distributed Uniform(0,1) when the null hypothesis is "
+                "true and the test statistic is continuous?"
+            ),
+            options=(
+                "Because most test statistics are approximately normal near the null.",
+                "Because the central limit theorem forces the distribution of essentially any test statistic toward uniformity as the sample size grows.",
+                "Because plugging a random variable into its own CDF yields a uniform variable.",
+                "Because the sample size is assumed large enough for asymptotics to hold.",
+            ),
+            answer=2,
+            explanation=(
+                "The p-value is essentially one minus the null CDF evaluated at the statistic, "
+                "and feeding a variable through its own CDF is the probability integral "
+                "transform, which returns a Uniform(0,1). This is exact for a continuous "
+                "statistic, not an asymptotic approximation, and it is precisely what makes a "
+                "level-α test reject a true null a fraction α of the time. With a discrete "
+                "statistic the p-value is only lumpily uniform."
+            ),
+        ),
+        Question(
+            prompt=(
+                "You screen 1000 hypotheses at α = 0.05 with 80% power, and only 10% of the "
+                "hypotheses correspond to real effects. Roughly what fraction of your "
+                "significant results are false positives?"
+            ),
+            options=(
+                "About 5%, because that is the significance level you tested at.",
+                "About 20%, because power was 80% so 20% of findings are missed.",
+                "About 36%, because the many true nulls generate false positives that swamp the few real hits.",
+                "About 1%, since a p-value below 0.05 makes each individual finding very likely to reflect a real effect rather than chance noise.",
+            ),
+            answer=2,
+            explanation=(
+                "The 100 real effects yield about 80 true positives; the 900 nulls yield about "
+                "0.05 x 900 = 45 false positives. Of 125 significant results, 45 are false, "
+                "roughly 36%. The significance level controls the error rate among nulls only; "
+                "with a low base rate the sheer number of nulls dominates the mix, which is why "
+                "a small p-value need not signal a likely-true finding."
+            ),
+        ),
+        Question(
+            prompt=(
+                "An underpowered study nonetheless reaches p < 0.05. Why should you distrust "
+                "its reported effect size more, not less, because of the low power?"
+            ),
+            options=(
+                "Because low power inflates the p-value, making the result borderline.",
+                "Because only unusually large estimates clear the bar, so the significant ones are biased upward.",
+                "Because low power almost always flips the sign of the estimated effect, so the reported direction is the one thing you cannot trust.",
+                "Because the significance itself corrects the estimate for bias.",
+            ),
+            answer=1,
+            explanation=(
+                "At low power the alternative barely separates from the null, so only the "
+                "luckiest, most inflated estimates cross the threshold — the winner's curse, or "
+                "a Type M (magnitude) error. Significance conditions on clearing the bar, which "
+                "selects for overestimates, so the point estimate is biased upward by "
+                "construction. A Type S (sign) error, getting the direction wrong, is also "
+                "possible but not guaranteed. This is why better-powered replications routinely "
+                "find smaller effects than the original."
+            ),
+        ),
+        Question(
+            prompt=(
+                "For a genome-wide screen of 20,000 tests, why is the Benjamini–Hochberg "
+                "procedure usually preferred over a Bonferroni correction?"
+            ),
+            options=(
+                "Because Bonferroni cannot be applied when the number of tests is very large.",
+                "Because Bonferroni is built to control the rate of false negatives, while Benjamini-Hochberg is instead built to control the rate of false positives.",
+                "Because BH guarantees zero false positives whereas Bonferroni does not.",
+                "Because BH controls the expected fraction of false discoveries, keeping power Bonferroni would destroy.",
+            ),
+            answer=3,
+            explanation=(
+                "Bonferroni controls the family-wise error rate — the chance of even one false "
+                "positive — by testing each hypothesis at α/m, which for m = 20,000 is so strict "
+                "it discards nearly every real effect too. BH instead controls the false "
+                "discovery rate, the expected share of rejections that are false, tolerating a "
+                "controlled sprinkle of false positives to recover many more true discoveries. "
+                "Neither guarantees zero false positives; BH's guarantee is on-average, not "
+                "never-any."
+            ),
+        ),
+        Question(
+            prompt=(
+                "A researcher tries several outcome definitions and covariate sets, reporting "
+                "only the analysis that reached p < 0.05. Why does this invalidate the reported "
+                "p-value even though a single test was ultimately reported?"
+            ),
+            options=(
+                "It does not; reporting one clean analysis is standard and fully valid.",
+                "Because properly averaging the reported p-value together with the ones from the discarded analyses would have pushed it even further below the threshold.",
+                "Because the choice of analysis depended on the data, so many tests were implicitly run and the null distribution shifted.",
+                "Because using covariates always biases a p-value regardless of how they are chosen.",
+            ),
+            answer=2,
+            explanation=(
+                "The p-value's uniform-under-the-null guarantee assumes a single, pre-specified "
+                "test. When the analysis is chosen because it crossed the threshold — p-hacking, "
+                "or its subtler cousin the garden of forking paths — a whole thicket of tests is "
+                "effectively run, so the true null distribution of the reported statistic is no "
+                "longer the one assumed. Covariate adjustment is not the problem; letting the "
+                "data pick the adjustment is. Pre-registration is what restores the guarantee."
+            ),
+        ),
+    ),
+    "intervals": (
+        Question(
+            prompt=(
+                "You compute a 95% confidence interval and get [3.1, 4.8]. Which "
+                "statement is the only fully correct reading under the frequentist "
+                "definition?"
+            ),
+            options=(
+                "If the experiment were repeated many times, about 95% of the "
+                "intervals the procedure produces would contain the fixed parameter.",
+                "There is a 95% probability that the parameter lies between 3.1 and 4.8, "
+                "given the data you actually observed this one time.",
+                "The parameter falls in [3.1, 4.8] in 95% of the samples, and outside it "
+                "in the other 5%, because the parameter varies from sample to sample.",
+                "About 95% of future data points drawn from the population will land "
+                "between 3.1 and 4.8, which is what the interval is built to capture.",
+            ),
+            answer=0,
+            explanation=(
+                "Coverage is a long-run property of the procedure: 95% of the random "
+                "intervals it makes cover the fixed target. Once the data is in, the "
+                "endpoints and the parameter are all fixed numbers, so the chance this "
+                "interval contains it is 0 or 1, not 0.95. The parameter does not vary "
+                "across samples (the intervals do), and an interval for a parameter is "
+                "not a prediction interval for new data points."
+            ),
+        ),
+        Question(
+            prompt=(
+                "What property of a pivotal quantity is exactly what lets you turn it "
+                "into a confidence interval with correct coverage?"
+            ),
+            options=(
+                "Its sampling distribution does not depend on the unknown parameter, so "
+                "its quantiles are fixed and can be inverted to bracket the parameter.",
+                "It is an unbiased estimator of the parameter, so its expected value "
+                "equals the target and the interval centers on the truth.",
+                "It is exactly normally distributed for every sample size, so the 1.96 "
+                "multiplier always delivers precisely 95% coverage.",
+                "It is the maximum-likelihood estimator, whose established efficiency "
+                "guarantees that the resulting interval comes out as the shortest one attainable at that confidence level.",
+            ),
+            answer=0,
+            explanation=(
+                "A pivot mixes data and parameter into a quantity whose distribution is "
+                "parameter-free, so you can bracket its fixed quantiles and solve for the "
+                "parameter. Being unbiased, exactly normal, or the MLE are none of them "
+                "the requirement: the standardized mean with unknown variance is not "
+                "normal but a t pivot, and it still gives exact coverage because its "
+                "distribution does not depend on the mean."
+            ),
+        ),
+        Question(
+            prompt=(
+                "By test-interval duality, the 1 minus alpha confidence set for a "
+                "parameter is exactly which collection of values?"
+            ),
+            options=(
+                "The null values that a level-alpha test does not reject on the "
+                "observed data.",
+                "The null values that a level-alpha test does reject, since those are "
+                "the ones the data speaks against.",
+                "The parameter values at which the likelihood of the observed data "
+                "exceeds a fixed absolute threshold.",
+                "The parameter values assigned more than 1 minus alpha of the posterior "
+                "probability under a flat prior.",
+            ),
+            answer=0,
+            explanation=(
+                "The confidence set gathers the nulls that survive testing, and its "
+                "coverage follows in one line from the test's level: the true value "
+                "escapes rejection with probability 1 minus alpha. Rejected values are "
+                "the complement. A raw likelihood cutoff is a different (likelihood-"
+                "interval) construction, and a posterior statement is the Bayesian "
+                "object, which needs a prior."
+            ),
+        ),
+        Question(
+            prompt=(
+                "On a right-skewed posterior, how do the equal-tailed and highest "
+                "posterior density (HPD) 95% credible intervals compare?"
+            ),
+            options=(
+                "The HPD is the shorter of the two and sits closer to the mode, while "
+                "the equal-tailed interval cuts 2.5% from each tail and is stretched by "
+                "the long tail.",
+                "They are identical, because both are simply two equivalent ways of describing "
+                "the very same central 95% region of any posterior distribution you could write down.",
+                "The equal-tailed interval is always the shorter, since removing the "
+                "extreme tails is the most efficient way to keep 95% of the mass.",
+                "The HPD is always wider, because requiring equal density at both "
+                "endpoints forces it to reach farther into the tail on each side.",
+            ),
+            answer=0,
+            explanation=(
+                "The HPD is by definition the shortest interval holding 95%, with equal "
+                "density at its ends, so on a skew it hugs the mode and comes out shorter "
+                "than the equal-tailed version. The two coincide only for a symmetric, "
+                "unimodal posterior; there the choice does not matter, which is why the "
+                "distinction only surfaces under skew."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Inverting a certain test yields, on your particular dataset, an EMPTY "
+                "95% confidence set. What is the right conclusion?"
+            ),
+            options=(
+                "The procedure can still have exact 95% coverage overall; an empty set "
+                "on one sample reflects that coverage is a property of the procedure, "
+                "not of this interval.",
+                "The procedure must be invalid and its true long-run coverage must actually be "
+                "below 95%, because a genuinely correct interval procedure can never once come out empty on any sample.",
+                "The data must contain an error, because there is always at least one "
+                "parameter value consistent with any valid sample.",
+                "The parameter has been proven not to exist in the assumed model, which "
+                "is the intended meaning of an empty confidence set.",
+            ),
+            answer=0,
+            explanation=(
+                "Coverage averages over the sampling distribution, and a procedure can "
+                "hit exactly 95% while occasionally emitting an empty set or the whole "
+                "line on specific samples (ratios of means and boundary problems are "
+                "classic cases). An empty set is not a coverage failure or a data bug; "
+                "it is the vivid reminder that the 95% never described this one interval."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Under a flat prior, the 95% credible interval for a normal mean equals "
+                "the 95% confidence interval numerically. What does this coincidence "
+                "establish?"
+            ),
+            options=(
+                "Only that the endpoints match here; the two still make different "
+                "claims, one about the procedure across repeats and one about the "
+                "parameter given the data.",
+                "That confidence and credible intervals are fundamentally the same concept, so "
+                "the frequentist and the Bayesian readings of an interval are freely interchangeable in general.",
+                "That the flat prior was truly uninformative, which is the reason the "
+                "two frameworks are guaranteed to agree in every problem.",
+                "That the confidence interval secretly assumed a flat prior all along, "
+                "so every confidence interval is really a credible interval in "
+                "disguise.",
+            ),
+            answer=0,
+            explanation=(
+                "Matching numbers do not merge the meanings: one interval reports the "
+                "behavior of a rule over hypothetical repeats, the other a posterior "
+                "probability about the parameter given this data. The agreement is "
+                "special to symmetric, large-sample, flat-prior settings and breaks "
+                "under informative priors, skew, boundaries, or small n, so the two are "
+                "not interchangeable in general."
+            ),
+        ),
+    ),
     "the-shrinkage-surprise": (
         Question(
             prompt=(
