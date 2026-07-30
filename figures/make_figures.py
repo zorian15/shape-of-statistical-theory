@@ -1587,6 +1587,224 @@ def fig_posterior_summaries() -> Path:
     return save_plot(fig, "posterior-summaries.svg")
 
 
+def fig_risk_curves() -> Path:
+    """Plot: risk curves over theta showing dominance and crossing (no total order)."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.8))
+
+    theta = np.linspace(-2.6, 2.6, 500)
+    mle = np.ones_like(theta)  # delta(x) = x: risk = 1 at every theta.
+    inflated = 1.69 + 0.09 * theta**2  # delta(x) = 1.3 x: above 1 everywhere.
+    shrink = 0.25 + 0.25 * theta**2  # delta(x) = x / 2: dips low, climbs in the tails.
+
+    ax.plot(theta, inflated, color=BRICK, lw=2.2, label="inflated rule  δ(x) = 1.3x")
+    ax.plot(theta, mle, color=ACCENT, lw=2.4, label="MLE  δ(x) = x")
+    ax.plot(theta, shrink, color=AMBER, lw=2.2, label="shrinkage  δ(x) = x / 2")
+
+    # Shade where the shrinkage rule beats the MLE (between the two crossings).
+    below = shrink < mle
+    ax.fill_between(theta, shrink, mle, where=below, color=AMBER, alpha=0.12)
+
+    # The crossings, at theta = ±sqrt(3), where shrinkage stops beating the MLE.
+    cross = np.sqrt(3.0)
+    for xc in (-cross, cross):
+        ax.plot([xc], [1.0], marker="o", color=INK, markersize=4, zorder=6)
+
+    ax.annotate(
+        "above the MLE everywhere\n→ inadmissible",
+        xy=(0.95, 1.69 + 0.09 * 0.95**2),
+        xytext=(-1.15, 1.34),
+        color=BRICK,
+        fontsize=8,
+        ha="left",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.text(
+        0.0,
+        0.56,
+        "below the MLE near 0,\nabove it past the crossings",
+        color=INK_SOFT,
+        fontsize=8,
+        ha="center",
+        va="center",
+    )
+    ax.text(-2.55, 1.09, "flat: same risk at every θ", color=ACCENT, fontsize=8)
+
+    ax.set_xlabel("unknown parameter  θ")
+    ax.set_ylabel("risk  R(θ, δ)")
+    ax.set_xlim(-2.6, 2.6)
+    ax.set_ylim(0, 2.5)
+    ax.legend(loc="upper center", handlelength=1.5)
+    fig.tight_layout()
+    return save_plot(fig, "risk-curves.svg")
+
+
+def fig_minimax_bayes() -> Path:
+    """Plot: a flat minimax risk against a Bayes rule that dips near the prior center."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.8))
+
+    theta = np.linspace(-3.2, 3.2, 500)
+    mle = np.ones_like(theta)  # Minimax here: flat worst-case risk of 1.
+    bayes = 0.25 + 0.25 * theta**2  # Bayes rule for a N(0, 1) prior: delta = x / 2.
+
+    # The prior, drawn low on the same axis to show where the Bayes rule spends
+    # its advantage — it dips lowest exactly where the prior places its mass.
+    prior = np.exp(-0.5 * theta**2) / np.sqrt(2 * np.pi)
+    ax.fill_between(theta, 0, prior, color=ACCENT_SOFT, zorder=0)
+    ax.plot(theta, prior, color=MUTED, lw=1.0, alpha=0.7)
+    ax.text(0.0, 0.42, "prior over θ", color=MUTED, fontsize=8, ha="center")
+
+    ax.axhline(1.0, color=ACCENT, lw=1.2, ls=(0, (5, 3)))
+    ax.plot(theta, mle, color=ACCENT, lw=2.4, label="MLE (minimax)")
+    ax.plot(theta, bayes, color=VIOLET, lw=2.4, label="Bayes rule (prior at 0)")
+
+    # Mark the crossings where the Bayes rule stops beating the minimax rule.
+    cross = np.sqrt(3.0)
+    for xc in (-cross, cross):
+        ax.plot([xc], [1.0], marker="o", color=INK, markersize=4, zorder=6)
+
+    ax.annotate(
+        "minimax worst case = 1\n(flat guarantee)",
+        xy=(2.4, 1.0),
+        xytext=(1.1, 1.62),
+        color=ACCENT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "dips low where the prior bets,\npays for it in the tails",
+        xy=(-2.15, 0.25 + 0.25 * 2.15**2),
+        xytext=(-3.15, 1.72),
+        color=VIOLET,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    ax.set_xlabel("unknown parameter  θ")
+    ax.set_ylabel("risk  R(θ, δ)")
+    ax.set_xlim(-3.2, 3.2)
+    ax.set_ylim(0, 2.3)
+    ax.legend(loc="upper right", handlelength=1.5)
+    fig.tight_layout()
+    return save_plot(fig, "minimax-bayes.svg")
+
+
+def fig_loss_shapes() -> Path:
+    """Plot: the four loss functions as shapes of the error they penalize."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.8))
+
+    e = np.linspace(-3.0, 3.0, 600)
+    squared = e**2
+    absolute = np.abs(e)
+    delta = 1.0
+    # Huber: equals e^2 for |e| <= delta, then continues linearly with matching
+    # slope, so it hugs squared error at the center and absolute error in the tails.
+    huber = np.where(np.abs(e) <= delta, e**2, delta * (2 * np.abs(e) - delta))
+
+    ax.plot(e, squared, color=ACCENT, lw=2.4, label="squared: (c − y)²")
+    ax.plot(e, absolute, color=AMBER, lw=2.4, label="absolute: |c − y|")
+    ax.plot(e, huber, color=VIOLET, lw=2.2, ls=(0, (5, 2)), label="Huber (blend)")
+
+    # 0-1 loss: flat at one everywhere except a narrow exact-hit notch at zero.
+    eps = 0.12
+    ax.plot([-3, -eps], [1, 1], color=BRICK, lw=2.0)
+    ax.plot([eps, 3], [1, 1], color=BRICK, lw=2.0)
+    ax.plot([0], [0], marker="o", color=BRICK, markersize=5, zorder=6)
+    ax.plot([0, 0], [0, 1], color=BRICK, lw=1.0, ls=(0, (1, 2)), alpha=0.6)
+    ax.text(2.98, 1.12, "0–1: only exact counts", color=BRICK, fontsize=8, ha="right")
+
+    ax.annotate(
+        "Huber: quadratic\ncore, linear tails",
+        xy=(1.6, 2 * 1.6 - 1),
+        xytext=(2.15, 3.0),
+        color=VIOLET,
+        fontsize=8,
+        ha="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    ax.set_xlabel("error   c − y")
+    ax.set_ylabel("loss")
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(0, 7.2)
+    ax.legend(loc="upper center", handlelength=1.6)
+    fig.tight_layout()
+    return save_plot(fig, "loss-shapes.svg")
+
+
+def fig_quantile_loss() -> Path:
+    """Plot: pinball loss for three quantile levels, and where each bottoms out."""
+    import math
+
+    style_plot()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8.4, 3.5))
+
+    taus = ((0.1, VIOLET), (0.5, ACCENT), (0.9, AMBER))
+    r = np.linspace(-3.0, 3.0, 600)
+
+    # Left: pinball loss L_tau(r) = tau*r for r >= 0, (tau-1)*r for r < 0 — a tilted V.
+    for tau, color in taus:
+        loss = np.where(r >= 0, tau * r, (tau - 1.0) * r)
+        ax1.plot(r, loss, color=color, lw=2.3, label=f"τ = {tau:g}")
+    # Label the steep arm of tau=0.9 in the open space to its lower right.
+    ax1.text(
+        2.35,
+        0.62,
+        "steep side:\nunder-predicting\ncosts more",
+        color=AMBER,
+        fontsize=7.5,
+        ha="center",
+        va="center",
+    )
+    ax1.set_title("Pinball loss tilts with τ", loc="left")
+    ax1.set_xlabel("residual   y − c")
+    ax1.set_ylabel("loss")
+    ax1.set_xlim(-3, 3)
+    ax1.set_ylim(0, 2.9)
+    ax1.legend(loc="upper center", handlelength=1.4)
+
+    # Right: a right-skewed density with the three quantiles it targets.
+    x = np.linspace(0.0, 8.0, 700)
+    k, theta = 2.0, 1.0  # Gamma(2, 1): right-skewed, so its quantiles spread apart.
+    log_pdf = (
+        (k - 1) * np.log(np.maximum(x, 1e-9))
+        - x / theta
+        - (math.lgamma(k) + k * math.log(theta))
+    )
+    pdf = np.exp(log_pdf)
+    ax2.plot(x, pdf, color=INK_SOFT, lw=2.0)
+    ax2.fill_between(x, pdf, color=ACCENT_SOFT, alpha=0.6)
+
+    cdf = np.cumsum(pdf)
+    cdf /= cdf[-1]
+    offsets = {0.1: -0.18, 0.5: 0.18, 0.9: 0.0}  # Nudge labels off the peak.
+    for tau, color in taus:
+        q = float(x[np.searchsorted(cdf, tau)])
+        h = float(np.interp(q, x, pdf))
+        ax2.plot([q, q], [0, h], color=color, lw=2.0)
+        ax2.text(
+            q + offsets[tau],
+            h + 0.016,
+            f"{tau:g}",
+            color=color,
+            fontsize=8,
+            ha="center",
+        )
+    ax2.set_title("…so its minimizer is that quantile", loc="left")
+    ax2.set_xlabel("value  y")
+    ax2.set_ylabel("density")
+    ax2.set_xlim(0, 8)
+    ax2.set_ylim(0, 0.44)
+    ax2.set_yticks([])
+    ax2.spines["left"].set_visible(False)
+    ax2.tick_params(length=0)
+
+    fig.tight_layout()
+    return save_plot(fig, "quantile-loss.svg")
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -1768,6 +1986,12 @@ FIGURES = (
     # Ch 9 · The Bayesian View
     fig_prior_likelihood_posterior,
     fig_posterior_summaries,
+    # Ch 10 · Loss Functions
+    fig_loss_shapes,
+    fig_quantile_loss,
+    # Ch 11 · Risk and Decision Theory
+    fig_risk_curves,
+    fig_minimax_bayes,
     # Ch 12 · The Bias–Variance Tradeoff
     fig_dartboard,
     # Cover and icons

@@ -150,6 +150,26 @@ _ENTRIES: tuple[Reference, ...] = (
         arxiv="",
         url="http://www.stat.columbia.edu/~gelman/book/",
     ),
+    Reference(
+        key="huber1964",
+        authors=("Huber, P. J.",),
+        truncated=False,
+        year=1964,
+        title="Robust Estimation of a Location Parameter",
+        venue="The Annals of Mathematical Statistics",
+        arxiv="",
+        url="https://doi.org/10.1214/aoms/1177703732",
+    ),
+    Reference(
+        key="koenker1978",
+        authors=("Koenker, R.", "Bassett, G."),
+        truncated=False,
+        year=1978,
+        title="Regression Quantiles",
+        venue="Econometrica",
+        arxiv="",
+        url="https://doi.org/10.2307/1913643",
+    ),
 )
 
 

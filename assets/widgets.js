@@ -583,6 +583,142 @@
     draw();
   };
 
+  // The loss you choose picks the estimate. Squared loss is minimized at the
+  // mean, absolute loss at the median. A fixed sample with one outlier makes the
+  // two minimizers visibly separate; slide the candidate and watch each total.
+  WIDGETS["loss-minimizers"] = function (figure, cap) {
+    var data = [2.0, 3.5, 4.0, 4.5, 5.0, 6.0, 14.0];
+    var n = data.length;
+    var sorted = data.slice().sort(function (p, q) {
+      return p - q;
+    });
+    var mean = data.reduce(function (s, v) {
+      return s + v;
+    }, 0) / n;
+    var median = sorted[(n - 1) / 2]; // n is odd here.
+    var xr = [0, 15];
+
+    var squared = function (c) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += (data[i] - c) * (data[i] - c);
+      return s;
+    };
+    var absolute = function (c) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += Math.abs(data[i] - c);
+      return s;
+    };
+    // Normalize each loss to its own maximum over the range, so both fit one
+    // vertical axis and only the location of each minimum carries meaning.
+    var sMax = 1,
+      aMax = 1;
+    for (var c = xr[0]; c <= xr[1]; c += 0.1) {
+      sMax = Math.max(sMax, squared(c));
+      aMax = Math.max(aMax, absolute(c));
+    }
+
+    var cv = makeCanvas(figure, cap, 0.6);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var cInput = addSlider(
+      controls,
+      null,
+      "candidate estimate&nbsp;<em>c</em>",
+      0,
+      15,
+      0.1,
+      7.5
+    );
+
+    function draw() {
+      var dim = cv.size();
+      var pad = 10;
+      var yr = [0, 1.08];
+      var mx = function (x) {
+        return pad + ((x - xr[0]) * (dim.w - 2 * pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      var cVal = parseFloat(cInput.value);
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      plotFn(
+        ctx,
+        mx,
+        my,
+        xr,
+        function (c) {
+          return squared(c) / sMax;
+        },
+        C.accent,
+        2.4
+      );
+      plotFn(
+        ctx,
+        mx,
+        my,
+        xr,
+        function (c) {
+          return absolute(c) / aMax;
+        },
+        C.amber,
+        2.4
+      );
+
+      // Minimizers: the mean (for squared) and the median (for absolute).
+      function vline(x, color) {
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(mx(x), my(yr[0]));
+        ctx.lineTo(mx(x), my(yr[1]));
+        ctx.stroke();
+        ctx.restore();
+      }
+      vline(mean, C.accent);
+      vline(median, C.amber);
+
+      // The current candidate, with a dot on each loss curve.
+      ctx.strokeStyle = C.muted;
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.moveTo(mx(cVal), my(yr[0]));
+      ctx.lineTo(mx(cVal), my(yr[1]));
+      ctx.stroke();
+      dot(ctx, mx(cVal), my(squared(cVal) / sMax), 4.5, C.accent);
+      dot(ctx, mx(cVal), my(absolute(cVal) / aMax), 4.5, C.amber);
+
+      // The data as ticks along the baseline.
+      ctx.strokeStyle = C.inkSoft;
+      ctx.lineWidth = 2;
+      for (var i = 0; i < n; i++) {
+        ctx.beginPath();
+        ctx.moveTo(mx(data[i]), my(yr[0]));
+        ctx.lineTo(mx(data[i]), my(yr[0]) - 9);
+        ctx.stroke();
+      }
+
+      readout.innerHTML =
+        '<span class="widget-num var">squared loss → min at the mean = ' +
+        mean.toFixed(2) +
+        "</span>" +
+        '<span class="widget-num bias">absolute loss → min at the median = ' +
+        median.toFixed(2) +
+        "</span>" +
+        '<span class="widget-num total">your c = ' +
+        cVal.toFixed(2) +
+        "</span>";
+    }
+
+    cInput.addEventListener("input", draw);
+    window.addEventListener("resize", draw);
+    draw();
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {
