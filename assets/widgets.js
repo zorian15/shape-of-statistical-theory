@@ -971,6 +971,205 @@
     draw();
   };
 
+  // The nonparametric bootstrap. One fixed observed sample stands in for the
+  // population; each resample draws n points from it WITH replacement, recomputes
+  // the mean, and drops it into an accumulating histogram. The spread of that
+  // histogram is the bootstrap standard error, which tracks the textbook s / sqrt(n)
+  // without ever knowing the population. Resample to watch the sampling
+  // distribution build up from the data itself.
+  WIDGETS["bootstrap"] = function (figure, cap) {
+    var data = [
+      2.1, 3.4, 2.8, 4.9, 3.1, 2.5, 6.2, 3.7, 2.9, 4.1, 3.3, 5.5, 2.7, 3.9,
+    ];
+    var n = data.length;
+    var xbar = data.reduce(function (s, v) {
+      return s + v;
+    }, 0) / n;
+    var variance = data.reduce(function (s, v) {
+      return s + (v - xbar) * (v - xbar);
+    }, 0) / (n - 1);
+    var se = Math.sqrt(variance / n); // The textbook standard error, s / sqrt(n).
+
+    var xr = [xbar - 4 * se, xbar + 4 * se];
+    var bins = 40;
+    var bw = (xr[1] - xr[0]) / bins;
+    var boots = []; // Accumulated bootstrap means across resamples.
+    var lastPick = null; // Counts of how often each point was drawn last resample.
+
+    var cv = makeCanvas(figure, cap, 0.66);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "widget-button";
+    addBtn.textContent = "Resample ×200";
+    controls.appendChild(addBtn);
+    var resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "widget-button";
+    resetBtn.textContent = "Reset";
+    controls.appendChild(resetBtn);
+
+    function oneResample() {
+      var counts = new Array(n);
+      var i;
+      for (i = 0; i < n; i++) counts[i] = 0;
+      var s = 0;
+      for (i = 0; i < n; i++) {
+        var j = Math.floor(Math.random() * n);
+        counts[j] += 1;
+        s += data[j];
+      }
+      lastPick = counts;
+      return s / n;
+    }
+
+    function addBatch(k) {
+      for (var t = 0; t < k; t++) boots.push(oneResample());
+      draw();
+    }
+
+    function bootSE() {
+      if (boots.length < 2) return 0;
+      var m = boots.reduce(function (a, b) {
+        return a + b;
+      }, 0) / boots.length;
+      var v = boots.reduce(function (a, b) {
+        return a + (b - m) * (b - m);
+      }, 0) / (boots.length - 1);
+      return Math.sqrt(v);
+    }
+
+    function normalPdf(x, m, sd) {
+      var z = (x - m) / sd;
+      return Math.exp(-0.5 * z * z) / (sd * Math.sqrt(2 * Math.PI));
+    }
+
+    function draw() {
+      var dim = cv.size();
+      var padL = 30;
+      var pad = 10;
+      var ctx = cv.ctx;
+
+      // Reserve a strip along the top for the observed sample, the rest for the
+      // accumulating histogram of bootstrap means.
+      var stripH = 34;
+      var histTop = stripH + 6;
+
+      var counts = new Array(bins);
+      var b;
+      for (b = 0; b < bins; b++) counts[b] = 0;
+      for (var t = 0; t < boots.length; t++) {
+        var bin = Math.floor((boots[t] - xr[0]) / bw);
+        if (bin >= 0 && bin < bins) counts[bin] += 1;
+      }
+      var dens = counts.map(function (c) {
+        return boots.length > 0 ? c / (boots.length * bw) : 0;
+      });
+      var se_b = bootSE();
+      var ymax = se_b > 0 ? normalPdf(xbar, xbar, se_b) : 1;
+      ymax = Math.max(ymax, Math.max.apply(null, dens.concat([0.001]))) * 1.15;
+      var yr = [0, ymax];
+
+      var mx = function (x) {
+        return padL + ((x - xr[0]) * (dim.w - padL - pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return (
+          dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - histTop)) / (yr[1] - yr[0])
+        );
+      };
+
+      ctx.clearRect(0, 0, dim.w, dim.h);
+
+      // Grid lines and baseline for the histogram region.
+      ctx.strokeStyle = C.ruleStrong;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(mx(xr[0]), my(0));
+      ctx.lineTo(mx(xr[1]), my(0));
+      ctx.moveTo(mx(xr[0]), my(0));
+      ctx.lineTo(mx(xr[0]), histTop);
+      ctx.stroke();
+
+      // The observed sample as ticks in the top strip, sized by how often each
+      // point was drawn in the most recent resample (to show "with replacement").
+      for (var i = 0; i < n; i++) {
+        var drawn = lastPick ? lastPick[i] : 0;
+        ctx.strokeStyle = drawn > 0 ? C.amber : C.ruleStrong;
+        ctx.lineWidth = drawn > 0 ? 1 + drawn : 1.5;
+        ctx.beginPath();
+        ctx.moveTo(mx(data[i]), stripH);
+        ctx.lineTo(mx(data[i]), 8);
+        ctx.stroke();
+      }
+      // The observed mean, the center the resampling scatters around.
+      ctx.strokeStyle = C.ink;
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(mx(xbar), 6);
+      ctx.lineTo(mx(xbar), dim.h - 22);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = C.muted;
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("observed data (amber = drawn this resample)", padL, dim.h - 6);
+
+      // Histogram of the bootstrap means.
+      ctx.fillStyle = C.accentSoft;
+      ctx.strokeStyle = C.accent;
+      ctx.lineWidth = 1;
+      for (b = 0; b < bins; b++) {
+        if (dens[b] > 0) {
+          var x0 = mx(xr[0] + b * bw);
+          var x1 = mx(xr[0] + (b + 1) * bw);
+          var y1 = my(dens[b]);
+          ctx.fillRect(x0, y1, x1 - x0, my(0) - y1);
+          ctx.strokeRect(x0, y1, x1 - x0, my(0) - y1);
+        }
+      }
+
+      // The normal the bootstrap distribution is converging to.
+      if (se_b > 0) {
+        ctx.strokeStyle = C.ink;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (var k = 0; k <= 200; k++) {
+          var xx = xr[0] + ((xr[1] - xr[0]) * k) / 200;
+          var yy = normalPdf(xx, xbar, se_b);
+          if (k === 0) ctx.moveTo(mx(xx), my(yy));
+          else ctx.lineTo(mx(xx), my(yy));
+        }
+        ctx.stroke();
+      }
+
+      readout.innerHTML =
+        '<span class="widget-num total">resamples: ' +
+        boots.length +
+        "</span>" +
+        '<span class="widget-num var">bootstrap SE = ' +
+        (se_b > 0 ? se_b.toFixed(3) : "—") +
+        "</span>" +
+        '<span class="widget-num bias">s / √n = ' +
+        se.toFixed(3) +
+        " (the target)</span>";
+    }
+
+    addBtn.addEventListener("click", function () {
+      addBatch(200);
+    });
+    resetBtn.addEventListener("click", function () {
+      boots = [];
+      lastPick = null;
+      draw();
+    });
+    window.addEventListener("resize", draw);
+    addBatch(200);
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {

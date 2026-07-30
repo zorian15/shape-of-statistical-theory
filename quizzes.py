@@ -51,6 +51,199 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "asymptotic-efficiency": (
+        Question(
+            prompt="Under the usual regularity conditions, what does asymptotic normality of the MLE assert about √n(θ̂ − θ₀)?",
+            options=(
+                "It converges in distribution to a Normal with mean 0 and variance I(θ₀)⁻¹, the inverse Fisher information.",
+                "It converges to a Normal with mean 0 and variance I(θ₀), the Fisher information itself.",
+                "It converges in probability to θ₀, which is what makes the estimator consistent.",
+                "Its variance collapses to zero, so the limiting distribution is a point mass at θ₀.",
+            ),
+            answer=0,
+            explanation="The √n rescaling is exactly what stops the variance collapsing to zero — that collapse is consistency, the separate and weaker fact that θ̂ itself converges to θ₀. The information enters inverted because curvature and uncertainty are reciprocals: a sharply peaked likelihood (large I) pins the parameter down (small variance).",
+        ),
+        Question(
+            prompt="The MLE for the Uniform(0, θ) model converges at rate 1/n to a non-Gaussian limit, outside the standard theory. Which regularity condition does this model break?",
+            options=(
+                "The support depends on θ, so the likelihood's maximum sits at a moving boundary edge.",
+                "The Fisher information is infinite at the true parameter, which drives the asymptotic variance to zero.",
+                "The model fails to be identifiable, so there is no unique parameter the likelihood can peak at.",
+                "The log-likelihood is not concave, so the maximum likelihood estimate need not be unique.",
+            ),
+            answer=0,
+            explanation="The score-equation derivation of asymptotic normality needs a smooth interior maximum. When the support edge moves with θ the maximizer is max xᵢ — a corner, not a stationary point — and the estimate actually converges faster than √n (rate 1/n), with an exponential limit. Identifiability holds here, and the pathology is the moving support, not the information.",
+        ),
+        Question(
+            prompt="Hájek's convolution theorem characterizes the limiting distribution of any regular estimator. What does it say?",
+            options=(
+                "It is the efficient Gaussian convolved with an independent noise term, so it can never be tighter than Normal(0, I⁻¹).",
+                "It is exactly Normal(0, I⁻¹), so every regular estimator is automatically asymptotically efficient.",
+                "It is a Gaussian whose variance is the estimator's squared finite-sample bias plus I⁻¹.",
+                "It is bounded below in variance only among unbiased estimators, just as the Cramér–Rao bound is.",
+            ),
+            answer=0,
+            explanation="Convolving with independent noise can only spread a distribution, never sharpen it, so I⁻¹ is a floor — but the theorem does not force equality: inefficient regular estimators exist, carrying extra noise. The restriction to 'regular' estimators is the escape hatch superefficient rules exploit, and the whole point of the asymptotic theory is that it transcends the unbiased-only restriction of the finite-sample Cramér–Rao bound.",
+        ),
+        Question(
+            prompt="Hodges' estimator has asymptotic variance strictly below I⁻¹ at θ = 0. Why does this not make the MLE asymptotically inadmissible?",
+            options=(
+                "Hodges' estimator is worse than the MLE across a whole neighborhood of 0, so it never dominates it.",
+                "The MLE also attains zero variance at θ = 0, so the two estimators simply tie at that point.",
+                "Hodges' estimator is biased, and admissibility comparisons are only defined between unbiased estimators.",
+                "Superefficiency violates the convolution theorem, so Hodges' estimator is not a valid estimator at all.",
+            ),
+            answer=0,
+            explanation="Inadmissibility requires domination: no worse everywhere and strictly better somewhere. Hodges wins only on a measure-zero set and loses badly in the surrounding neighborhood (the local-minimax risk peaks), so it does not dominate. Contrast the James–Stein estimator (Chapter 13), which genuinely dominates the sample mean everywhere in three or more dimensions — a real free lunch, where Hodges is a fake one.",
+        ),
+        Question(
+            prompt="You fit a model by maximum likelihood but suspect the model family does not contain the true distribution. What asymptotic variance should you report?",
+            options=(
+                "The sandwich A⁻¹BA⁻¹, with A the expected Hessian and B the score variance, which diverge under misspecification.",
+                "The inverse Fisher information I⁻¹, because the MLE is asymptotically efficient whatever the model.",
+                "The Cramér–Rao bound, which lower-bounds any estimating equation whether or not the model is correct.",
+                "Effectively zero, since the estimate is still consistent for the true data-generating distribution.",
+            ),
+            answer=0,
+            explanation="Under misspecification the two forms of the information identity — expected Hessian versus score variance — no longer coincide, so A ≠ B and the sandwich does not collapse to I⁻¹. The estimate also targets the parameter whose model is closest in Kullback–Leibler divergence, not the true distribution, so it is not consistent for the truth; reporting the naive I⁻¹ can badly misstate the real uncertainty.",
+        ),
+        Question(
+            prompt="An estimator has asymptotic relative efficiency 0.5 against the MLE. What does that mean operationally?",
+            options=(
+                "It needs about twice as many observations as the MLE to reach the same precision.",
+                "Its standard error shrinks like 1/⁴√n, since it converges at half the MLE's rate.",
+                "It is unbiased, with variance exactly half that of the maximum likelihood estimate.",
+                "It beats the information bound by a factor of two at the true parameter value.",
+            ),
+            answer=0,
+            explanation="Relative efficiency is the ratio of asymptotic variances; 0.5 means twice the variance, and since variance scales like 1/n, matching the MLE's precision takes about twice the sample size. It does not change the √n convergence rate, and a value below 1 always means worse (larger variance), never beating the floor.",
+        ),
+    ),
+    "the-bootstrap": (
+        Question(
+            prompt="The nonparametric bootstrap is inconsistent for the sample maximum of data on the interval from 0 to theta. What is the essential reason?",
+            options=(
+                "No resample can contain a value above the observed maximum, so the bootstrap distribution is pinned to the order statistics and cannot reproduce a smooth density that partly lives above the data.",
+                "The maximum is a biased estimator of theta, and the bootstrap is valid only for unbiased statistics.",
+                "The number of resamples B is never large enough to resolve the extreme upper tail.",
+                "The variance of the maximum is infinite, so there is no standard error to bootstrap.",
+            ),
+            answer=0,
+            explanation="The maximum is a non-smooth functional pinned to the data's edge: the empirical distribution has a hard wall at the observed maximum and zero mass beyond it, so resamples clump onto the order statistics (about 63% return the observed maximum exactly) and cannot converge to the true extreme-value law, which depends on the unobserved tail. The bootstrap routinely handles biased statistics and even estimates bias, so B is a red herring; here the variance is finite. The m-out-of-n bootstrap restores consistency.",
+        ),
+        Question(
+            prompt="Why must bootstrap resampling draw n points WITH replacement rather than without?",
+            options=(
+                "Without replacement, a size-n draw from n points only permutes the sample, so every replicate equals the original estimate and the distribution collapses to a spike.",
+                "With replacement guarantees every resample is a distinct dataset, which the percentile interval requires.",
+                "Sampling without replacement would violate the plug-in principle, since the empirical distribution that stands in for the population is only well defined under draws made with replacement.",
+                "With replacement corrects a downward bias that without-replacement sampling introduces into the standard error.",
+            ),
+            answer=0,
+            explanation="Drawing n points with replacement is exactly drawing an i.i.d. sample of size n from the empirical distribution: some points repeat, about 37% are omitted, and that reshuffling of multiplicities manufactures the variability that mimics collecting a fresh sample. Without replacement, a full draw just reorders the data, so there is no variation at all. Resamples are not required to be distinct, and the empirical distribution can be sampled either way in principle; it is the full without-replacement draw that is degenerate.",
+        ),
+        Question(
+            prompt="You run a bootstrap with B = 200 resamples and get a jagged interval. A colleague says 'just use B = 100,000.' When does that help?",
+            options=(
+                "It sharpens the Monte Carlo approximation to the ideal bootstrap, but cannot shrink the statistical gap between the empirical and true distributions.",
+                "It helps whenever n is small, because a larger number of resamples compensates for having only a few original data points to learn from.",
+                "It always tightens the interval, since more resamples means more information about theta.",
+                "It helps only for smooth statistics; for non-smooth ones B is irrelevant.",
+            ),
+            answer=0,
+            explanation="Two approximations are stacked: the Monte Carlo error from using finitely many resamples, which a large B drives to nearly zero, and the statistical error from replacing the true distribution with the empirical one, which is fixed once the data are collected. Raising B never touches the second gap, so it cannot compensate for small n or add information about theta. It only removes the simulation noise, leaving the statistical error that actually limits the interval.",
+        ),
+        Question(
+            prompt="The BCa interval is 'second-order accurate' while the plain percentile interval is only first-order accurate. What does the extra order buy, and why?",
+            options=(
+                "Its coverage error shrinks like 1/n instead of 1/sqrt(n), because the bias and acceleration corrections capture the skewness the percentile interval ignores.",
+                "Its intervals are guaranteed shorter than percentile intervals, because the acceleration term removes excess variance.",
+                "It attains exact nominal coverage in finite samples, whereas the percentile interval is correct only asymptotically.",
+                "It removes the requirement that the statistic be smooth, extending bootstrap consistency to the extremes and boundary parameters where the ordinary method is known to fail.",
+            ),
+            answer=0,
+            explanation="An Edgeworth expansion writes the sampling distribution as a normal plus corrections in powers of 1/sqrt(n); the first correction is a skewness term. BCa's bias correction and acceleration recover that term from the data, so its coverage error falls like 1/n rather than 1/sqrt(n). It is not about interval length, it is still an asymptotic (not exact) guarantee, and it does nothing to rescue non-smooth statistics like the maximum.",
+        ),
+        Question(
+            prompt="Applied to a strongly autocorrelated time series, the ordinary i.i.d. bootstrap tends to report standard errors that are:",
+            options=(
+                "too small, because independent resampling destroys the serial dependence and overstates the effective sample size.",
+                "too large, because resampling repeatedly amplifies the correlation already present in the data.",
+                "about right, because the bootstrap is fully distribution-free and adapts automatically to whatever dependence structure the data happen to contain.",
+                "unbiased but far more variable, requiring a much larger B to stabilize.",
+            ),
+            answer=0,
+            explanation="Resampling points independently shatters the autocorrelation, so the bootstrap acts as if the series carried far more independent information than it does and reports a standard error that can be several times too small. The block bootstrap fixes this by resampling contiguous blocks of consecutive observations, preserving the dependence inside each block. The i.i.d. bootstrap is not distribution-free with respect to dependence: independence is a built-in assumption.",
+        ),
+        Question(
+            prompt="When would you prefer the parametric bootstrap (simulating from a fitted model) over the nonparametric one (resampling the data)?",
+            options=(
+                "When you trust a parametric family for the data, since simulating from the fitted smooth model is more efficient and can even generate values beyond the observed range.",
+                "Always, because simulating from a fitted distribution is computationally cheaper than resampling the original observations.",
+                "When the sample is large, because only then is the empirical distribution too coarse to resample from.",
+                "When you want a frequentist interval, since the nonparametric bootstrap yields a Bayesian posterior instead.",
+            ),
+            answer=0,
+            explanation="The parametric bootstrap replaces the spiky empirical distribution with a smooth fitted one, so it is more efficient when the model is right and can even escape the boundary failure (a fitted uniform can produce values above the observed maximum). Its price is model dependence: it inherits every bias of a misspecified family. It is not simply cheaper, large n makes the empirical distribution better rather than worse, and the ordinary bootstrap is frequentist, not Bayesian (the Bayesian bootstrap is a separate, Dirichlet-weighted method).",
+        ),
+    ),
+    "high-dimensional-phenomena": (
+        Question(
+            prompt="You draw n samples of a p-dimensional standard Gaussian, whose true covariance is the identity, and compute the sample covariance matrix in the regime p/n approaching 0.5. What happens to its eigenvalues?",
+            options=(
+                "They spread across a whole interval described by the Marchenko–Pastur law, roughly 0.09 to 2.9, even though every true eigenvalue is exactly 1.",
+                "They converge to 1, because each entry of the sample covariance is an unbiased average whose error vanishes, so the law of large numbers pins the entire spectrum down to the true value of 1.",
+                "They split into two clusters, one near 0 and one near 2, reflecting the p/n ratio directly.",
+                "They stay near 1 with fluctuations of order 1 over root-n around it, matching the classical standard error.",
+            ),
+            answer=0,
+            explanation="Entrywise consistency does not imply spectral consistency. Each entry of the sample covariance converges, but the eigenvalues are extreme summaries of the whole matrix, and small correlated errors across many entries push the top eigenvalue up and the bottom one down. The limiting spread is exactly the Marchenko–Pastur law; the largest eigenvalue's fluctuations follow the non-Gaussian Tracy–Widom law. There is no splitting into clusters and no shrinking to 1 — the spread persists no matter how much data of the same shape you collect.",
+        ),
+        Question(
+            prompt="In p = 1000 dimensions, where does essentially all the probability mass of a standard Gaussian sit?",
+            options=(
+                "In a thin shell at distance about root-p from the origin, where the density per point is low but the available volume is overwhelming.",
+                "Near the origin, since that is where the probability density is highest and the mode of the distribution sits, so most of the sampled points fall in that dense central region.",
+                "Uniformly throughout the ball of radius root-p, filling the interior of the space evenly.",
+                "Out at the corners of the space, strung far along the individual coordinate axes.",
+            ),
+            answer=0,
+            explanation="The density is indeed highest at the origin, but in high dimensions almost no volume is there — volume crowds toward the surface of the ball. The product of a low per-point density and an enormous volume peaks in a thin shell at radius root-p, with relative width shrinking as p grows. This is concentration of measure, and it is the engine of the curse of dimensionality: distances between points all concentrate near a single value, so nearness stops carrying information.",
+        ),
+        Question(
+            prompt="The lasso attains estimation error of order root of (s log p over n) for an s-sparse signal, rather than root of (p over n). Which two facts make this rate possible?",
+            options=(
+                "That only s coefficients are nonzero, and that the design satisfies a restricted eigenvalue condition keeping the relevant directions well separated.",
+                "That p is much larger than n, and that the variance of the noise is known exactly ahead of time.",
+                "That the lasso penalty is convex, and that its tuning parameter is chosen by cross-validation.",
+                "That the true support set is already known before fitting, and that the predictor columns are exactly orthogonal so their estimated coefficients never interfere.",
+            ),
+            answer=0,
+            explanation="The log p factor is the price of implicitly searching over all subsets of possible supports, since log of (p choose s) is about s log p. But sparsity alone is not enough: the restricted eigenvalue condition guarantees the true sparse signal is not confusable with a dense combination of the other predictors. Without it, two different sparse models can fit the data equally well and no method can separate them, so the rate is a property of the lasso on a recoverable design, not of the lasso alone. Knowing the support in advance would trivialize the problem — the whole point is that you do not.",
+        ),
+        Question(
+            prompt="Double descent shows test error falling again in the overparameterized regime, sometimes below the classical sweet spot. What does this establish about the bias–variance decomposition?",
+            options=(
+                "The decomposition still holds as an exact identity; what fails is the assumption that variance rises monotonically with the raw parameter count.",
+                "It refutes the decomposition: once a model interpolates the data, risk no longer splits into a bias part and a variance part.",
+                "It shows that bias, not variance, is what keeps falling past the interpolation threshold, because interpolating the training data drives the variance term all the way to exactly zero.",
+                "It proves that explicit regularization is unnecessary whenever a model is large enough to interpolate its training data.",
+            ),
+            answer=0,
+            explanation="Risk equals bias squared plus variance is an exact identity and nothing overturns it. The mistaken extra assumption was that raw parameter count drives variance up. In the overparameterized regime the minimum-norm interpolator spreads noise across many nearly flat directions where it does little harm, and choosing the smallest-norm fit acts like a ridge penalty no one wrote down. Bias and variance still sum to the risk; the variance term simply is not monotone in the parameter count, so the count was never the right complexity axis.",
+        ),
+        Question(
+            prompt="A colleague concludes from benign overfitting that fitting the training data to zero error is always safe as long as the model is large enough. Where does this reasoning go wrong?",
+            options=(
+                "Benign overfitting holds only under specific conditions on the covariance spectrum and the signal; where those fail, interpolation overfits as harmfully as ever.",
+                "It is essentially correct — with enough parameters the minimum-norm interpolator is provably optimal, no matter what the data distribution, covariance spectrum, or noise level happens to be.",
+                "Benign overfitting was disproven for linear regression and was only ever demonstrated to hold for deep neural networks.",
+                "Zero training error cannot actually be reached in the overparameterized regime, so the premise never even arises in practice.",
+            ),
+            answer=0,
+            explanation="Bartlett and coauthors proved benign overfitting for linear regression only under conditions on the effective rank of the data covariance — many small directions to harmlessly absorb the noise. Outside those conditions, interpolation is as malignant as intuition says. In most practical problems a well-tuned ridge or lasso still beats the interpolator, and diagnosing which regime you are in is itself an open, data-dependent question. The result narrows to sometimes-safe, never to regularization-is-obsolete.",
+        ),
+    ),
     "hypothesis-testing": (
         Question(
             prompt="In the Neyman–Pearson framework you fix the size alpha and then maximize power, rather than minimizing the total error rate alpha + beta. What does this choice actually encode?",

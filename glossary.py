@@ -592,6 +592,154 @@ _TERMS: tuple[Term, ...] = (
         "Test-interval duality",
         "The equivalence between hypothesis tests and confidence sets: the 1 minus alpha confidence set is exactly the set of null values a level-alpha test would not reject, and inverting a confidence procedure recovers a family of tests. It is why a value lies outside the interval precisely when the corresponding test rejects it.",
     ),
+    Term(
+        "Asymptotic efficiency",
+        "The property of an estimator whose asymptotic variance equals the inverse Fisher information, achieving the Cramér–Rao information bound in the large-sample limit. The maximum likelihood estimator is the canonical asymptotically efficient estimator.",
+    ),
+    Term(
+        "Information bound",
+        "The inverse Fisher information I(θ)⁻¹, the smallest asymptotic variance any regular estimator can attain. It is the large-sample form of the Cramér–Rao bound and the floor efficiency is measured against.",
+    ),
+    Term(
+        "Local asymptotic normality (LAN)",
+        "A property of a model whereby, on the 1/√n scale around the true parameter, its log-likelihood ratio expands into a quadratic and the model behaves like the problem of estimating the mean of a single Gaussian. It is the framework in which efficiency statements are made rigorous.",
+    ),
+    Term(
+        "Convolution theorem",
+        "Hájek's result that the limiting distribution of any regular estimator equals the efficient Gaussian Normal(0, I⁻¹) convolved with an independent noise term. Since convolving with noise only spreads a distribution, no regular estimator can be more concentrated than the efficient Gaussian.",
+    ),
+    Term(
+        "Local asymptotic minimax (LAM)",
+        "The theorem (Hájek and Le Cam) that no estimator can beat the risk of the efficient Gaussian in the worst case over a shrinking neighborhood of the truth, for any bowl-shaped loss. Unlike the convolution theorem it constrains all estimators, not just regular ones, by judging worst-case rather than pointwise behavior.",
+    ),
+    Term(
+        "Regular estimator",
+        "An estimator whose limiting behavior does not change discontinuously as the true parameter is perturbed locally. Regularity rules out pathological estimators tuned to one exact parameter value, and is the condition under which the convolution theorem applies.",
+    ),
+    Term(
+        "Superefficiency",
+        "The phenomenon of an estimator attaining asymptotic variance below the information bound I⁻¹ at some parameter values. It is possible only on a set of Lebesgue measure zero and is paid for by inflated risk in surrounding neighborhoods, so it does not overturn the efficiency of the MLE.",
+    ),
+    Term(
+        "Hodges' estimator",
+        "A superefficient estimator built from the MLE by snapping it to zero whenever it lands near zero. It beats the information bound at the single point θ = 0 but suffers spiking risk in a neighborhood of it, illustrating why pointwise superefficiency is not a genuine improvement.",
+    ),
+    Term(
+        "Relative efficiency",
+        "The ratio of the asymptotic variances of two estimators, equivalently the ratio of sample sizes each needs to reach the same precision. An estimator with relative efficiency below 1 against the MLE wastes information and needs proportionally more data.",
+    ),
+    Term(
+        "M-estimator",
+        "An estimator defined as the solution to an estimating equation — setting the average of a chosen score function to zero. Maximum likelihood is the special case whose score is the derivative of the log-likelihood.",
+    ),
+    Term(
+        "Sandwich variance",
+        "The asymptotic variance A⁻¹BA⁻¹ of an M-estimator, with A the expected Hessian of the objective and B the variance of the score. When the model is correct A = B = I and it collapses to the inverse Fisher information; under misspecification the two differ and the sandwich is the honest variance.",
+    ),
+    Term(
+        "Misspecification",
+        "The situation in which the assumed model family does not contain the true data-generating distribution. The MLE then converges to the parameter whose model is closest in Kullback–Leibler divergence, and its variance takes the sandwich form rather than the inverse Fisher information.",
+    ),
+    Term(
+        "Bootstrap",
+        "A resampling method that approximates the sampling distribution of a statistic by repeatedly recomputing it on samples drawn from the data itself, standing in for samples from the unknown population.",
+    ),
+    Term(
+        "Empirical distribution",
+        "The distribution that places probability 1/n on each of the n observed data points; it is the nonparametric estimate of the population distribution and converges to it as n grows.",
+    ),
+    Term(
+        "Plug-in principle",
+        "Estimate any quantity that is a functional of the unknown population distribution by computing the same functional of the empirical distribution instead.",
+    ),
+    Term(
+        "Resampling",
+        "Drawing new samples from the observed data, typically n points with replacement, to imitate the process of collecting fresh datasets from the population.",
+    ),
+    Term(
+        "Nonparametric bootstrap",
+        "The bootstrap that resamples directly from the data (equivalently, from the empirical distribution), assuming nothing about the shape of the population distribution.",
+    ),
+    Term(
+        "Parametric bootstrap",
+        "A bootstrap that fits a parametric model to the data and simulates new datasets from the fitted distribution rather than resampling the observations; more efficient when the model is correct, but sensitive to misspecification.",
+    ),
+    Term(
+        "Bootstrap standard error",
+        "An estimate of a statistic's standard error given by the standard deviation of its values across bootstrap resamples.",
+    ),
+    Term(
+        "Percentile interval",
+        "A bootstrap confidence interval formed from the empirical quantiles of the bootstrap replicates, for example the 2.5th and 97.5th percentiles for a 95% interval.",
+    ),
+    Term(
+        "Basic bootstrap interval",
+        "A bootstrap confidence interval, also called the pivotal interval, that treats the bootstrap error as a proxy for the sampling error and reflects the replicate percentiles back through the estimate.",
+    ),
+    Term(
+        "BCa interval",
+        "The bias-corrected and accelerated bootstrap confidence interval, which adjusts the percentile endpoints for median bias and for a standard error that varies with the parameter, achieving second-order accuracy.",
+    ),
+    Term(
+        "Second-order accuracy",
+        "A property of a confidence interval whose coverage error shrinks like 1/n rather than the 1/sqrt(n) of a first-order interval, achieved by capturing the skewness of the sampling distribution.",
+    ),
+    Term(
+        "Block bootstrap",
+        "A bootstrap for dependent data that resamples contiguous blocks of consecutive observations rather than single points, preserving the local dependence that i.i.d. resampling would destroy.",
+    ),
+    Term(
+        "m-out-of-n bootstrap",
+        "A bootstrap that resamples m points with m growing slower than n; drawing smaller resamples restores consistency in several cases, such as the sample maximum, where the ordinary bootstrap fails.",
+    ),
+    Term(
+        "High-dimensional statistics",
+        "The study of estimation and inference when the number of parameters p is comparable to the sample size n, rather than fixed while n grows. Formally, the regime where p/n tends to a positive constant, in which classical fixed-p asymptotics no longer apply.",
+    ),
+    Term(
+        "Curse of dimensionality",
+        "The cluster of ways problems get harder as dimension grows: data thins out, volume crowds toward the surface of any region, and distances between points concentrate near a single value so that nearness stops being informative.",
+    ),
+    Term(
+        "Concentration of measure",
+        "The phenomenon that a function of many independent coordinates that does not depend too sharply on any one of them is nearly constant across the randomness. It is why a high-dimensional Gaussian's length is almost exactly root-p.",
+    ),
+    Term(
+        "Marchenko–Pastur law",
+        "The limiting distribution of the eigenvalues of a sample covariance matrix as p and n grow with p/n fixed. Even when the true covariance is the identity, the sample eigenvalues spread across an interval rather than piling up at 1, revealing how the sample covariance degrades in high dimensions.",
+    ),
+    Term(
+        "Sample covariance matrix",
+        "The average of the outer products of centered data vectors, the natural estimate of the true covariance. It is consistent entry by entry, but in high dimensions its eigenvalues are badly biased, spreading out according to the Marchenko–Pastur law.",
+    ),
+    Term(
+        "Tracy–Widom law",
+        "The non-Gaussian limiting distribution of the largest eigenvalue of a large sample covariance (or Wishart) matrix, after centering and scaling. It describes the fluctuations at the upper edge of the Marchenko–Pastur spread.",
+    ),
+    Term(
+        "Restricted eigenvalue condition",
+        "An assumption on a regression design guaranteeing that the few directions a sparse signal occupies are not collapsed or confusable with combinations of the other predictors. It is what lets the lasso achieve fast sparse-recovery rates; without it, distinct sparse models can be indistinguishable from the data.",
+    ),
+    Term(
+        "Double descent",
+        "The pattern in which test error, plotted against model complexity, falls in a classical U, rises to a peak at the interpolation threshold, and then descends a second time in the overparameterized regime, sometimes below the classical minimum.",
+    ),
+    Term(
+        "Interpolation threshold",
+        "The level of model complexity at which a model just barely achieves zero training error, fitting every data point exactly. For a linear model it sits near p = n, and test error typically peaks there.",
+    ),
+    Term(
+        "Overparameterization",
+        "The regime in which a model has far more parameters than it has data points to fit, so infinitely many zero-training-error solutions exist. Surprisingly, the minimum-norm solution among them can generalize well.",
+    ),
+    Term(
+        "Benign overfitting",
+        "The phenomenon in which a model interpolates the training data — fitting the noise to zero training error — yet still predicts new data accurately. It occurs in linear regression only under specific conditions on the covariance spectrum, and is not a universal license to interpolate.",
+    ),
+    Term(
+        "Minimum-norm interpolator",
+        "Among the many fits that achieve zero training error in an overparameterized model, the one with the smallest coefficient norm. Choosing it acts as an implicit ridge-style regularizer and is the estimator behind benign overfitting.",
+    ),
 )
 
 
