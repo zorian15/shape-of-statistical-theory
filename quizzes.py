@@ -51,6 +51,390 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "what-makes-a-good-estimator": (
+        Question(
+            prompt=(
+                "You compute an estimate and it happens to equal the true parameter "
+                "exactly. What does this tell you about the estimator you used?"
+            ),
+            options=(
+                "Little on its own — a rule's quality lives in its sampling "
+                "distribution, not in one lucky estimate.",
+                "It proves the estimator is unbiased, since on this sample its output "
+                "landed on the true parameter value.",
+                "It proves the estimator is consistent, since hitting the truth shows "
+                "its error is capable of reaching zero.",
+                "It shows the estimator has low variance, since matching the target "
+                "implies little spread around that target.",
+            ),
+            answer=0,
+            explanation=(
+                "Bias, variance, and consistency are all features of the rule's "
+                "sampling distribution across every dataset it could see, not of one "
+                "realized number. A single hit is consistent with a wildly biased or "
+                "high-variance rule, just as a stopped clock is right twice a day."
+            ),
+        ),
+        Question(
+            prompt=(
+                "For a normal population variance, dividing the sum of squared "
+                "deviations by n minus 1 is unbiased, while dividing by n is biased. "
+                "Which statement is correct?"
+            ),
+            options=(
+                "The divide-by-n estimator has smaller mean squared error: the "
+                "variance it saves outweighs the bias it adds.",
+                "The divide-by-(n-1) estimator has smaller mean squared error, since "
+                "eliminating bias is what minimizes total error.",
+                "The two estimators have identical mean squared error, differing only "
+                "by a factor that cancels in expectation.",
+                "The comparison is undefined, because mean squared error is meaningful "
+                "only for unbiased estimators.",
+            ),
+            answer=0,
+            explanation=(
+                "Because MSE is squared bias plus variance, the unbiased choice need "
+                "not minimize it. Dividing by n lowers the variance term more than the "
+                "bias term costs; pushing to n plus 1 minimizes MSE outright. MSE is "
+                "defined for any estimator, biased or not."
+            ),
+        ),
+        Question(
+            prompt="In what sense can an unbiased estimator still be a poor choice?",
+            options=(
+                "It can carry enormous variance, so although it is right on average it "
+                "lands far off on any single sample.",
+                "It can be inconsistent, because unbiasedness keeps the distribution "
+                "centered but stops it from ever narrowing.",
+                "It can turn biased in large samples, since unbiasedness at finite n "
+                "need not survive as n goes to infinity.",
+                "It can ignore the model, because unbiased estimators are derived "
+                "without any reference to the likelihood at all.",
+            ),
+            answer=0,
+            explanation=(
+                "Unbiasedness constrains only the center of the sampling distribution, "
+                "not its spread, so an unbiased rule can be uselessly noisy. "
+                "Unbiasedness neither forces nor forbids consistency, and it does not "
+                "by itself decay with n — those distractors confuse independent "
+                "properties."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Consider the rule 'estimate the population mean by reporting only the "
+                "first observation and discarding the rest.' How does it behave?"
+            ),
+            options=(
+                "Unbiased but inconsistent: its expectation equals the mean, yet its "
+                "spread never shrinks as n grows.",
+                "Consistent but biased: a lone draw underuses the data, though it still "
+                "converges to the mean over time.",
+                "Both unbiased and consistent, since each observation has the right "
+                "mean and averaging only sharpens that.",
+                "Neither unbiased nor consistent, since a single observation cannot "
+                "match the population mean in expectation.",
+            ),
+            answer=0,
+            explanation=(
+                "A single draw has the population mean as its expectation, so the rule "
+                "is unbiased; but it ignores the growing sample, so its variance never "
+                "falls and it never concentrates on the truth. This is the cleanest "
+                "proof that unbiasedness and consistency are independent."
+            ),
+        ),
+        Question(
+            prompt=(
+                "An estimator is proven consistent. What does this guarantee about its "
+                "performance at the sample size you actually have?"
+            ),
+            options=(
+                "By itself nothing: consistency is a statement about the limit, and "
+                "consistent rules can differ widely at finite n.",
+                "That its bias vanishes at every finite sample size, which is precisely "
+                "what convergence to the truth demands.",
+                "That its standard error is already small, since consistency means the "
+                "sampling distribution has concentrated.",
+                "That it outperforms any inconsistent rival at that n, because "
+                "convergence must dominate non-convergence.",
+            ),
+            answer=0,
+            explanation=(
+                "Consistency is an asymptotic promise: the distribution collapses onto "
+                "the truth eventually, saying nothing about a fixed n. Two consistent "
+                "estimators can concentrate at very different rates, which is why the "
+                "1/sqrt(n) rate and its optimal constant (Chapters 7 and 19) are what "
+                "actually separate good rules from merely-consistent ones."
+            ),
+        ),
+    ),
+    "sufficiency-and-information": (
+        Question(
+            prompt="What is the precise sense in which a statistic T is sufficient for a parameter theta?",
+            options=(
+                "Given the value of T, the conditional distribution of the raw data no longer depends on theta.",
+                "T is an unbiased estimator of theta whose sampling variance exactly attains the Cramer-Rao information floor for the model at hand.",
+                "T converges to the true value of theta as the sample size grows without bound.",
+                "T is the function of the data that maximizes the likelihood for every theta.",
+            ),
+            answer=0,
+            explanation="Sufficiency is a statement about a conditional distribution: once T is known, the leftover randomness in the data is generated by a mechanism that never consults theta, so nothing beyond T can help estimate it. This is a property of the statistic relative to a model, not a claim that T estimates, converges to, or maximizes anything.",
+        ),
+        Question(
+            prompt="The Fisher-Neyman factorization writes the likelihood as g(T(x), theta) times h(x). Why can the factor h(x) be ignored when inferring theta?",
+            options=(
+                "Because it rescales every candidate theta by the same amount, so it cannot change which theta the data prefers.",
+                "Because it is always equal to one for any distribution in the exponential family.",
+                "Because it integrates to one over the data and therefore contributes nothing to the total probability.",
+                "Because it is the part of the likelihood that the maximum likelihood estimator sets to zero.",
+            ),
+            answer=0,
+            explanation="Since h(x) carries no theta, it multiplies the likelihood of every candidate parameter equally and drops out of any comparison or ratio. It is not generally one (for the Poisson it is 1/x!), and it is exactly where evidence against the model would hide, so 'ignore it' holds only for inference on theta inside an assumed model.",
+        ),
+        Question(
+            prompt="Fisher information I(theta) is often described as the curvature of the log-likelihood at the truth. What does a small I(theta) tell you?",
+            options=(
+                "The log-likelihood is flat near the truth, so many parameters explain the data about equally well and precise estimation is hard.",
+                "The estimator you chose must be biased, so its sampling distribution is centered far from the true parameter value no matter how much data you collect.",
+                "The sample size is too small, a problem that vanishes once enough data is collected.",
+                "The model has more than one parameter, so information leaks into the off-diagonal terms.",
+            ),
+            answer=0,
+            explanation="Small curvature means a broad, gently sloping peak: the data barely distinguishes the best theta from its neighbors, so no unbiased estimator can be very precise. Low information is a property of the model's shape at theta, distinct from bias, and it is a per-observation quantity that total information n*I(theta) scales up with more data rather than being 'cured' by it.",
+        ),
+        Question(
+            prompt="An estimator is reported with variance strictly below 1/(n I(theta)). What is the most likely explanation?",
+            options=(
+                "The estimator is biased, since the Cramer-Rao bound only floors the variance of unbiased estimators.",
+                "The Fisher information was computed with the wrong sign of the second derivative.",
+                "The estimator is inconsistent and its variance estimate cannot be trusted.",
+                "The sample violated independence, so the information failed to add across observations.",
+            ),
+            answer=0,
+            explanation="The Cramer-Rao bound is a floor for unbiased estimators only; biased rules routinely beat it by trading a little bias for a large drop in variance, which is exactly how shrinkage estimators win. Beating the bound is a signal that unbiasedness was given up on purpose, not evidence of an arithmetic or independence error.",
+        ),
+        Question(
+            prompt="The maximum likelihood estimator usually does not attain the Cramer-Rao bound exactly at finite n. Why is the bound still central to how it is judged?",
+            options=(
+                "Because the MLE is asymptotically efficient: as n grows its variance approaches 1/(n I(theta)), making the bound its large-sample precision.",
+                "Because the MLE is exactly unbiased at every sample size, so it sits on the bound by construction.",
+                "Because the bound is achieved by the sample mean, which the MLE always equals.",
+                "Because the bound guarantees the MLE has the strictly smallest variance among all estimators whatsoever, biased or unbiased, at every finite sample size and for every model.",
+            ),
+            answer=0,
+            explanation="Under mild regularity the MLE's variance converges to the inverse information, so the floor that no one touches at finite n becomes the exact asymptotic variance of the estimator you were going to use. The MLE is generally biased at finite n, need not equal the sample mean, and the bound never constrains biased estimators, which can dip below it.",
+        ),
+        Question(
+            prompt="The entire ordered sample is always a sufficient statistic. What does this reveal about sufficiency?",
+            options=(
+                "Sufficiency alone does not demand compression; you usually want the minimal sufficient statistic, the coarsest summary that still loses nothing.",
+                "The ordered sample is the only sufficient statistic that exists for a general model.",
+                "Sufficiency and minimality are one and the same property, so any statistic that is sufficient is already the maximally compressed summary, and hunting for a smaller one is wasted effort.",
+                "It shows the exponential family is the only family with a sufficient statistic of fixed size.",
+            ),
+            answer=0,
+            explanation="Keeping everything trivially loses no information, so sufficiency by itself is a weak requirement; the useful target is the minimal sufficient statistic, the maximal compression that stays sufficient. Many sufficient statistics coexist, minimality is a strictly stronger condition, and fixed-dimension sufficiency (the Pitman-Koopman-Darmois result) is a separate exponential-family fact.",
+        ),
+    ),
+    "maximum-likelihood": (
+        Question(
+            prompt=(
+                "You compute the maximum-likelihood estimate and the likelihood is "
+                "very high there. What does that high likelihood value actually tell "
+                "you?"
+            ),
+            options=(
+                "That the data you observed would be relatively unsurprising under "
+                "that parameter, and nothing more.",
+                "That this parameter is very probably the true value that generated the data, a direct probability statement about theta itself.",
+                "That this parameter has high posterior probability under a flat "
+                "prior.",
+                "That the estimate is unbiased and has reached the Cramér-Rao bound.",
+            ),
+            answer=0,
+            explanation=(
+                "The likelihood is a function of the parameter but a distribution over "
+                "data, so a high value means the observed data was well anticipated, "
+                "not that the parameter is probably true. The probability that theta "
+                "lies somewhere, given the data, is the Bayesian posterior and needs a "
+                "prior (Chapter 9). A flat prior does make the posterior proportional "
+                "to the likelihood, but that is a separate, normalized object and the "
+                "prior may not even be proper."
+            ),
+        ),
+        Question(
+            prompt=(
+                "The maximum-likelihood estimator of a Normal's variance is the average "
+                "squared deviation from the sample mean, dividing by n. Compared with "
+                "the usual sample variance that divides by n minus one, the MLE:"
+            ),
+            options=(
+                "systematically underestimates the variance, by a factor of (n-1)/n "
+                "that shrinks as n grows.",
+                "overestimates the variance because it reuses the sample mean inside "
+                "the deviations.",
+                "is unbiased, because maximum likelihood always targets unbiased "
+                "estimates.",
+                "has larger variance but exactly the same expected value as the n "
+                "minus one version.",
+            ),
+            answer=0,
+            explanation=(
+                "Because the sample mean is fit from the same data, the squared "
+                "deviations are a touch too small and the expectation is (n-1)/n times "
+                "the true variance — biased low, worst at small n. Maximum likelihood "
+                "optimizes likelihood, not unbiasedness, which is why the n minus one "
+                "divisor is used when unbiasedness is wanted. The bias vanishes as n "
+                "grows, which is consistency."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Under regularity conditions, in what precise sense is the MLE hard to "
+                "beat as the sample grows?"
+            ),
+            options=(
+                "Its sampling distribution approaches a Normal centered at the truth "
+                "whose variance meets the Cramer-Rao floor.",
+                "Its bias reaches zero faster than any other estimator's at every "
+                "finite sample size.",
+                "It has the smallest mean squared error of any estimator at every "
+                "sample size.",
+                "It converges to the truth faster than the law of large numbers allows "
+                "for an average.",
+            ),
+            answer=0,
+            explanation=(
+                "Asymptotic efficiency is a large-sample statement: the MLE becomes "
+                "approximately Normal around the truth with variance 1/(n I), the "
+                "lowest an unbiased estimator can reach. It is not a finite-sample "
+                "claim — a biased estimator can have smaller mean squared error at a "
+                "given n (Chapters 12 and 13) — and the rate is the ordinary 1/sqrt(n) "
+                "of the central limit theorem, not faster."
+            ),
+        ),
+        Question(
+            prompt=(
+                "For the uniform distribution on the interval from 0 to theta, setting "
+                "the derivative of the log-likelihood to zero fails to locate the MLE. "
+                "Why, and what is the MLE?"
+            ),
+            options=(
+                "The support depends on theta, so the likelihood peaks at a boundary "
+                "corner; the MLE is the sample maximum.",
+                "The log-likelihood is not concave in theta, so the score equation "
+                "returns a spurious minimum instead of a maximum and its sign must be "
+                "flipped to locate the peak.",
+                "The likelihood is flat in theta, so every positive parameter is an "
+                "equally good estimate.",
+                "The Fisher information is infinite, so the score is undefined and no "
+                "MLE exists at all.",
+            ),
+            answer=0,
+            explanation=(
+                "The density is positive only for theta at least as large as every "
+                "observation, so the likelihood rises to a corner at the sample maximum "
+                "and is cut off below it — the derivative is never zero there. This "
+                "violates the regularity condition that the support not move with the "
+                "parameter, so the MLE is max of the observations, and its distribution "
+                "is skewed and biased rather than Normal."
+            ),
+        ),
+        Question(
+            prompt=(
+                "You fit a model by maximum likelihood, but the true data-generating "
+                "distribution is not a member of your model family. As n grows, the "
+                "MLE converges to:"
+            ),
+            options=(
+                "the parameter whose model is closest to the truth in Kullback-Leibler "
+                "divergence.",
+                "the true distribution's parameters, since consistency guarantees "
+                "reaching the truth.",
+                "no fixed value; the estimate keeps drifting and never settles as data "
+                "accumulates.",
+                "the parameter that minimizes squared error between the model and the "
+                "observed data.",
+            ),
+            answer=0,
+            explanation=(
+                "With the truth outside the family there is no true theta to reach, so "
+                "the MLE settles on the pseudo-true value: the model in the family that "
+                "is nearest the truth in KL divergence. Consistency assumed a "
+                "correctly specified model, so it does not apply. The danger is that "
+                "this projection comes with confident-looking error bars for a model "
+                "that may not represent the data at all."
+            ),
+        ),
+    ),
+    "the-bayesian-view": (
+        Question(
+            prompt="In the full statement of Bayes' rule, the denominator is the marginal likelihood p(x), the probability of the data averaged over the prior. What is its role in shaping the posterior?",
+            options=(
+                "It is a constant in the parameter, renormalizing the product so the posterior integrates to one; the shape is set by prior times likelihood.",
+                "It reweights the prior toward the parameter values the data supports, and is what actually moves belief from the prior to the posterior.",
+                "It rescales the posterior's height so that a larger evidence produces a sharper, more confident posterior distribution.",
+                "It carries the likelihood's contribution, so discarding it would leave the posterior proportional to the prior alone.",
+            ),
+            answer=0,
+            explanation="The evidence does not depend on the parameter, so it cannot reweight one value against another or 'move' belief — that work is done entirely by the numerator, prior times likelihood. It is a pure normalizing constant. Its one further use is across models rather than within one: comparing the evidence of competing models is the basis of Bayes factors.",
+        ),
+        Question(
+            prompt="You report a 95% credible interval for a parameter. How does its meaning differ from a 95% confidence interval?",
+            options=(
+                "The credible interval places 95% posterior probability on the parameter being inside; the confidence interval's 95% describes the procedure's long-run coverage, not this interval.",
+                "They are the same idea computed two ways, so the distinction is purely philosophical and never changes the numbers you report.",
+                "The credible interval is always the wider of the two, because folding in a prior necessarily adds extra uncertainty to the estimate.",
+                "The confidence interval is the one making a direct probability claim about where the fixed parameter lies, while the credible interval merely describes the long-run behavior of the sampling procedure across repeats.",
+            ),
+            answer=0,
+            explanation="The guarantees live in different places: the credible interval's probability is about the parameter given your posterior, while the confidence interval's is about the method across repeated samples and says nothing about whether this particular interval traps the truth. The last option swaps the two, the classic misreading Chapter 18 is built to prevent. Numerically they can even coincide while meaning different things.",
+        ),
+        Question(
+            prompt="A Beta prior on a rate meets Bernoulli data and yields a Beta posterior; a Gamma prior on a Poisson rate stays Gamma. Why do such conjugate pairs exist so reliably?",
+            options=(
+                "Each likelihood is an exponential family, and its conjugate prior is built so that updating adds the data's sufficient statistic to the prior's pseudo-counts, keeping the family.",
+                "The prior and likelihood merely happen to share the same functional form by lucky coincidence, which is exactly why conjugacy works only for a short, memorized list of special named pairs and never generalizes beyond them.",
+                "Conjugacy holds whenever the prior is uninformative, since a flat prior cannot change the shape of the likelihood that it multiplies.",
+                "The posterior stays in the family because the evidence integral is finite, which forces the normalized product back into the prior's form.",
+            ),
+            answer=0,
+            explanation="Conjugacy is the exponential-family structure of Chapter 4 seen in Bayesian dress: because the parameter meets the data only through a sufficient statistic in the exponent, updating just increments the prior's counts. It has nothing to do with the prior being flat, and it is a structural guarantee, not a lucky coincidence for a handful of named pairs.",
+        ),
+        Question(
+            prompt="Under a flat prior, the MAP estimate coincides with the maximum-likelihood estimate. Does that make Bayesian inference just maximum likelihood with extra bookkeeping?",
+            options=(
+                "No; the Bayesian keeps the whole posterior — its spread is calibrated uncertainty and its mean can differ from the mode, which a single point discards.",
+                "Yes; with a flat prior the two estimates agree exactly, so the entire posterior distribution holds no information whatsoever beyond the single maximum-likelihood point estimate you already had.",
+                "No; the MAP and the MLE in fact disagree even under a flat prior, because the mode is computed on a rescaled version of the likelihood.",
+                "Yes; the posterior is guaranteed symmetric about the MLE, so quoting the mode conveys exactly what the full posterior would.",
+            ),
+            answer=0,
+            explanation="Matching the MLE at the peak is not the same as carrying no more information: the posterior's whole shape is the uncertainty, the mean parts from the mode whenever it is skewed, and 'flat' is not innocent — it can be improper and is not invariant to reparameterization. The MAP and MLE do coincide under a flat prior, so the option claiming they disagree is simply wrong.",
+        ),
+        Question(
+            prompt="An analyst uses a prior that is uniform on [0, 0.5] for a coin's bias p, then collects flips that are overwhelmingly heads. What does the posterior conclude?",
+            options=(
+                "It never puts any probability above 0.5, because the prior gave that region zero density and Bayes' rule multiplies, so no data can revive it.",
+                "It shifts smoothly past 0.5 toward the observed proportion, since a large enough sample always overwhelms whatever prior you started with.",
+                "It concentrates exactly at 0.5, the largest value the prior permitted, with a variance that shrinks to zero as more flips arrive.",
+                "It becomes undefined, because the data contradict the prior and the evidence integral in the denominator diverges to infinity.",
+            ),
+            answer=0,
+            explanation="A prior is a statement about what is possible, not merely likely: multiplying a region by zero leaves it zero forever, so the posterior piles up against the 0.5 boundary but can never cross it, no matter how lopsided the flips. The 'data always washes out the prior' rule holds only when the prior grants the truth positive probability, which this one refuses to do.",
+        ),
+        Question(
+            prompt="With a Beta(alpha, beta) prior and n = s + f observed trials, the posterior mean is a weighted average of the prior mean and the data proportion. What plays the role of the prior's weight?",
+            options=(
+                "The quantity alpha + beta, a prior sample size that the data outvotes once n grows past it.",
+                "The number of observed successes s, so that a longer run of successes makes the prior count for more.",
+                "The posterior variance, which grows with the data and thereby increases the prior's pull on the mean.",
+                "The ratio s over f of successes to failures, which fixes how strongly the prior is weighted.",
+            ),
+            answer=0,
+            explanation="The posterior mean weights the prior mean by (alpha + beta) / (alpha + beta + n) and the data proportion by n / (alpha + beta + n), so alpha + beta behaves like a count of imagined prior trials. Real data overrules it as soon as n exceeds it — the exact sense in which belief starts near the prior and ends near the data.",
+        ),
+    ),
     "what-this-book-is": (
         Question(
             prompt="The chapter calls theoretical statistics 'one question in many disguises.' Which pairing best captures the two moves it says the subject is built from?",

@@ -204,6 +204,86 @@ _TERMS: tuple[Term, ...] = (
         "Standard error",
         "The standard deviation of an estimator's sampling distribution — the typical distance between an estimate and its target. For a sample mean it is the population standard deviation divided by the square root of the sample size.",
     ),
+    Term(
+        "Estimand",
+        "The fixed unknown quantity you are trying to estimate — the target an estimator aims at, usually a parameter or a function of one.",
+    ),
+    Term(
+        "Unbiased estimator",
+        "An estimator whose expected value equals the estimand for every possible parameter value, so its guesses average out to the truth. Being unbiased constrains only the center of the sampling distribution, not its spread, so it does not imply low error.",
+    ),
+    Term(
+        "Fisher-Neyman factorization theorem",
+        "The practical test for sufficiency: a statistic T is sufficient for the parameter exactly when the likelihood factors into a piece depending on the data only through T (and on the parameter) times a piece of the data alone.",
+    ),
+    Term(
+        "Minimal sufficient statistic",
+        "The coarsest sufficient statistic — the maximal compression of the data that still loses no information about the parameter. Any other sufficient statistic can be reduced to it.",
+    ),
+    Term(
+        "Score function",
+        "The derivative of the log-likelihood with respect to the parameter. It is zero at the maximum likelihood estimate, and its expected square is the Fisher information.",
+    ),
+    Term(
+        "Fisher information",
+        "A measure of how much a sample tells you about a parameter, equal to the expected squared score and, for smooth models, to the expected curvature (negative second derivative) of the log-likelihood at the truth. A sharp likelihood peak means high information; a flat one means low.",
+    ),
+    Term(
+        "Fisher information matrix",
+        "The multi-parameter version of Fisher information: a matrix of expected curvatures and cross-curvatures of the log-likelihood surface, whose inverse floors the covariance of any unbiased estimator.",
+    ),
+    Term(
+        "Cramer-Rao bound",
+        "A lower bound on the variance of any unbiased estimator: the variance cannot fall below one over the total Fisher information, 1/(n I(theta)). It sets the best precision the data can buy, and biased estimators may fall below it.",
+    ),
+    Term(
+        "Efficiency",
+        "How close an estimator comes to the Cramer-Rao floor, measured as the ratio of the bound to the estimator's variance; it runs from 0 (wasteful) to 1 (best possible). An efficient estimator attains the floor.",
+    ),
+    Term(
+        "Likelihood function",
+        "For fixed observed data, the model's probability (or density) of that data read as a function of the parameter. It scores each candidate parameter by how well it would have anticipated the data; it is not a probability distribution over the parameter.",
+    ),
+    Term(
+        "Log-likelihood",
+        "The logarithm of the likelihood function. Taking the log turns the product over an independent sample into a sum without moving the peak, and it is the function one actually maximizes in practice.",
+    ),
+    Term(
+        "Maximum likelihood estimator (MLE)",
+        "The parameter value that maximizes the likelihood (equivalently, the log-likelihood) of the observed data — the top of the likelihood scoreboard, the setting under which the data is least surprising.",
+    ),
+    Term(
+        "Asymptotic normality",
+        "The property that an estimator's sampling distribution approaches a Normal centered at the target as the sample size grows. Under regularity the MLE is asymptotically normal with variance equal to the Cramer-Rao floor.",
+    ),
+    Term(
+        "Regularity conditions",
+        "The technical assumptions — a smooth log-likelihood and a data range that does not depend on the parameter, among others — under which the MLE is consistent and asymptotically normal. Models that break them, such as the uniform on an interval whose endpoint is the parameter, need case-by-case treatment.",
+    ),
+    Term(
+        "Prior distribution",
+        "A probability distribution over a parameter that encodes what you believe about it before seeing the current data. Combined with the likelihood through Bayes' rule, it becomes the posterior.",
+    ),
+    Term(
+        "Posterior distribution",
+        "The distribution of a parameter after updating the prior with observed data, proportional to the prior times the likelihood. It is the Bayesian's full answer, from which any point estimate or interval is only a summary.",
+    ),
+    Term(
+        "Bayes' rule",
+        "The identity that the posterior is proportional to the prior times the likelihood, normalized by the marginal likelihood. It is the single mechanical step that turns a belief held before the data into one held after.",
+    ),
+    Term(
+        "Marginal likelihood (evidence)",
+        "The probability of the observed data averaged over all parameter values under the prior, and the denominator in Bayes' rule. Being independent of the parameter, it only renormalizes the posterior, but across models it serves as the score behind Bayes factors.",
+    ),
+    Term(
+        "Credible interval",
+        "An interval that holds a stated share, such as 95%, of the posterior probability for a parameter. Unlike a confidence interval, it licenses the direct statement that the parameter lies inside it with that probability, given the prior and data.",
+    ),
+    Term(
+        "Maximum a posteriori (MAP) estimate",
+        "The parameter value at which the posterior density is highest — the single most probable value. Under a flat prior it coincides with the maximum-likelihood estimate, and it is what penalized (regularized) estimation computes.",
+    ),
 )
 
 
