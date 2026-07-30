@@ -51,6 +51,360 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "the-shrinkage-surprise": (
+        Question(
+            prompt=(
+                "Stein's paradox says the vector of sample means is inadmissible "
+                "for estimating three or more means at once. What exactly does the "
+                "James-Stein estimator improve on, and where?"
+            ),
+            options=(
+                "The total risk, the expected sum of squared errors across all "
+                "coordinates, and it is strictly smaller at every true mean "
+                "vector.",
+                "The risk in each individual coordinate separately, so that every "
+                "single coordinate's estimate is guaranteed at least as accurate as "
+                "the plain sample mean at every value of that coordinate's true mean.",
+                "The total risk, but only when the true means happen to lie close to "
+                "the shrinkage center that the estimator pulls toward.",
+                "The worst-case risk over all parameter values, leaving the risk "
+                "unchanged everywhere except at the least favorable point.",
+            ),
+            answer=0,
+            explanation=(
+                "The dominance is over total (summed) risk and holds at every theta, "
+                "which is what makes the sample mean inadmissible. It is emphatically "
+                "not a per-coordinate guarantee: a single coordinate can get worse. "
+                "And the win exists everywhere, not only near the center, though it is "
+                "largest there and shrinks toward zero as the truth moves far away."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Why does shrinkage help even when the quantities being estimated are "
+                "utterly unrelated, like a batting average and a wheat yield?"
+            ),
+            options=(
+                "Because with enough unrelated quantities, some are always close to "
+                "the center, and shrinkage exploits those without harming the rest.",
+                "Because the gain comes from correcting the length of the noise, which "
+                "totals p times sigma-squared regardless of how the true means relate.",
+                "Because unrelated quantities are statistically independent, and "
+                "independence is precisely the condition that makes pooling unbiased.",
+                "Because on a common scale unrelated quantities become exchangeable, so "
+                "borrowing information between them is then fully justified.",
+            ),
+            answer=1,
+            explanation=(
+                "The improvement is about the noise budget, not shared structure among "
+                "the truths. In p dimensions the observed vector overshoots in squared "
+                "length by about p sigma-squared no matter what theta is, and shrinking "
+                "corrects that length error. Independence and 'exchangeability' are "
+                "red herrings: the result needs neither a relationship nor a common "
+                "meaning among the coordinates."
+            ),
+        ),
+        Question(
+            prompt=(
+                "The James-Stein estimator carries the constant p minus 2 in its "
+                "shrinkage factor. What is the significance of that particular "
+                "constant?"
+            ),
+            options=(
+                "It is a tunable hyperparameter that the analyst sets by "
+                "cross-validation to control how aggressively the estimates shrink.",
+                "It rescales the estimator so that each coordinate remains individually "
+                "unbiased after the common shrinkage is applied.",
+                "It is the exact value that makes the risk improvement come out "
+                "negative for every theta, and it yields no gain until p is at "
+                "least three.",
+                "It equals the number of coordinates left over after two degrees of "
+                "freedom are spent estimating the shrinkage center and calibrating "
+                "the overall noise level.",
+            ),
+            answer=2,
+            explanation=(
+                "The p minus 2 is what forces the risk difference to favor shrinkage at "
+                "all theta, and it is where the 'three or more' threshold lives: at "
+                "p equal to 2 the factor yields no gain, and at p equal to 1 it does "
+                "not apply. It is not a free tuning knob, and it does not preserve "
+                "per-coordinate unbiasedness, which shrinkage deliberately gives up."
+            ),
+        ),
+        Question(
+            prompt=(
+                "In high dimensions, why is the plain observed vector X almost always "
+                "'too long' relative to the true mean vector theta?"
+            ),
+            options=(
+                "Because independent noise concentrates in the same direction as theta, "
+                "coherently adding to its length in a way that compounds across all of "
+                "the coordinates as the dimension grows.",
+                "Because squared-error loss systematically rewards larger estimates, "
+                "biasing the maximum-likelihood solution outward.",
+                "Because in many dimensions the noise lands nearly perpendicular to "
+                "theta, so by Pythagoras the squared length grows by about p "
+                "sigma-squared.",
+                "Because the sample mean is a biased estimator whose bias points away "
+                "from the origin and accumulates with dimension.",
+            ),
+            answer=2,
+            explanation=(
+                "Two generic high-dimensional directions are nearly orthogonal, so the "
+                "noise adds to theta at close to a right angle and the squared length "
+                "picks up the noise's own squared length, about p sigma-squared. The "
+                "sample mean is unbiased, and squared error does not reward large "
+                "estimates; the overshoot is a geometric fact about lengths, not a bias."
+            ),
+        ),
+        Question(
+            prompt=(
+                "A colleague uses James-Stein to estimate 30 quantities, then reports "
+                "the shrunken estimate of one particular quantity as if it were the "
+                "best possible estimate of that quantity alone. What is the problem?"
+            ),
+            options=(
+                "There is none, since dominance in total risk implies dominance in "
+                "every coordinate once at least three are estimated together.",
+                "The guarantee is about summed risk, so that single estimate may "
+                "actually be worse than its plain sample mean.",
+                "The estimate is invalid because James-Stein requires the reported "
+                "quantity to share a prior with the other twenty-nine quantities.",
+                "The problem is only that the shrinkage center was chosen from the data "
+                "rather than fixed in advance, which voids the guarantee entirely.",
+            ),
+            answer=1,
+            explanation=(
+                "Total-risk dominance says nothing about any single coordinate; one can "
+                "be pulled away from a genuinely far-from-center truth to help the sum. "
+                "Dominance does not descend to each coordinate, no shared prior is "
+                "required, and estimating the center from the data is standard and does "
+                "not by itself void the result."
+            ),
+        ),
+    ),
+    "penalties-and-priors": (
+        Question(
+            prompt=(
+                "Ridge and lasso start from the same least-squares fit and add a "
+                "penalty on coefficient size. Holding the penalty strength fixed at "
+                "some positive value, what is the essential difference in the fits "
+                "they return?"
+            ),
+            options=(
+                "Ridge keeps every coefficient nonzero but smaller, while lasso can "
+                "drive some coefficients exactly to zero, yielding a sparse model.",
+                "Ridge sets weak coefficients exactly to zero, while lasso shrinks "
+                "every coefficient by the same fixed fraction toward zero.",
+                "Both zero out weak coefficients, but ridge selects fewer of them "
+                "because squaring penalizes small coefficients more heavily.",
+                "Ridge leaves the coefficients unchanged and only rescales the "
+                "intercept, while lasso rescales all of the slopes at once.",
+            ),
+            answer=0,
+            explanation=(
+                "The squared L2 penalty has zero slope at the origin, so it never "
+                "pins a coefficient exactly at zero; the L1 penalty has a constant "
+                "slope right up to zero, strong enough to hold weak coefficients "
+                "there. That is why lasso does variable selection and ridge does not."
+            ),
+        ),
+        Question(
+            prompt=(
+                "In the budget picture, the fit is where the elliptical residual "
+                "contours first touch the region of allowed coefficients. Why does "
+                "this make lasso sparse but not ridge?"
+            ),
+            options=(
+                "The L1 region is a diamond with corners on the axes that an "
+                "expanding ellipse tends to strike first, and a corner puts a "
+                "coefficient at zero; the round L2 ball is met off-axis.",
+                "The L1 region is larger than the L2 region, so an expanding ellipse "
+                "reaches its boundary sooner and clips whichever single coefficient it "
+                "happens to meet first on the way to the least-squares point.",
+                "The L2 ball has flat faces aligned with the axes, so the ellipse "
+                "meets it exactly on an axis and zeros that coefficient out.",
+                "The residual contours are circular for lasso and elliptical for "
+                "ridge, so only the lasso case can be tangent along a coordinate.",
+            ),
+            answer=0,
+            explanation=(
+                "Sparsity comes from the geometry of the constraint region, not from "
+                "the data: the diamond's corners sit on the axes and catch the "
+                "ellipse there. The residual contours are the same shape in both "
+                "cases; only the region differs."
+            ),
+        ),
+        Question(
+            prompt=(
+                "A penalized regression is exactly a MAP estimate. Under the "
+                "standard Gaussian-error likelihood, which prior on the coefficients "
+                "reproduces the ridge penalty, and which reproduces the lasso?"
+            ),
+            options=(
+                "A Gaussian prior gives ridge and a Laplace prior gives lasso, "
+                "because the negative log of each prior is the corresponding penalty.",
+                "A Laplace prior gives ridge and a Gaussian prior gives lasso, "
+                "because the heavier tails of the Laplace enforce smooth shrinkage.",
+                "A uniform prior gives ridge and a Gaussian prior gives lasso, since "
+                "only a bounded prior can force coefficients to exactly zero.",
+                "A Gaussian prior gives both, with ridge using its mean and lasso "
+                "using its mode as the point estimate reported.",
+            ),
+            answer=0,
+            explanation=(
+                "Taking minus the log of a zero-mean Gaussian density yields a sum of "
+                "squares; minus the log of a Laplace density yields a sum of absolute "
+                "values. The penalty strength maps to the prior width: a tighter "
+                "prior means heavier shrinkage."
+            ),
+        ),
+        Question(
+            prompt=(
+                "You run lasso on data with several strongly correlated predictors. "
+                "It keeps one of them and zeros the rest. What is the safest reading "
+                "of that result?"
+            ),
+            options=(
+                "Lasso's choice among correlated predictors is unstable, so the "
+                "selected one is one plausible story that can flip with a new sample, "
+                "not proof the others have no effect.",
+                "The zeroed predictors have been shown to carry no signal, since "
+                "lasso only removes a variable once its true coefficient is zero.",
+                "The kept predictor is guaranteed to be the one most strongly "
+                "correlated with the response, because lasso ranks the predictors by "
+                "their marginal correlation and keeps only the strongest one.",
+                "Correlation among predictors makes lasso keep all of them, so any "
+                "zeros you see must come from a bug in the optimizer.",
+            ),
+            answer=0,
+            explanation=(
+                "Among collinear predictors the L1 penalty tends to keep one almost "
+                "arbitrarily and drop the rest, and which one survives is sample-"
+                "dependent. This instability is exactly where ridge's habit of "
+                "sharing weight across the cluster is an advantage."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Full Bayesian inference with a Laplace prior gives a posterior over "
+                "the coefficients. How does its behavior at zero compare to the "
+                "lasso's exact zeros?"
+            ),
+            options=(
+                "The posterior mean is essentially never exactly zero, so lasso's "
+                "exact zeros are a property of reporting the posterior mode, not of "
+                "the Bayesian model itself.",
+                "The posterior mean lands on exactly zero for the weak coefficients, "
+                "so full Bayesian inference with a Laplace prior reproduces lasso's "
+                "sparsity directly, with no separate point estimate needed.",
+                "The posterior has no mode at zero, so the Laplace prior cannot "
+                "produce sparsity under any point estimate you might report.",
+                "The posterior mean and mode coincide for a Laplace prior, so mean "
+                "and MAP give identical exact zeros.",
+            ),
+            answer=0,
+            explanation=(
+                "The smooth posterior places mass on both sides of zero, so its mean "
+                "misses the axis; only the mode can sit exactly at zero. Lasso is MAP "
+                "estimation, and its sparsity is an artifact of keeping the peak "
+                "rather than the whole distribution."
+            ),
+        ),
+        Question(
+            prompt=(
+                "When the true signal is spread thinly across many correlated "
+                "predictors, ridge often predicts better than lasso. Why?"
+            ),
+            options=(
+                "Forcing most coefficients to exactly zero discards real if faint "
+                "structure, whereas ridge keeps every predictor and shares the weight "
+                "across the correlated cluster.",
+                "Ridge has lower bias than lasso in every setting, so it always wins "
+                "on prediction once the predictors are correlated.",
+                "Lasso cannot fit correlated predictors at all, so it returns the "
+                "least-squares solution and overfits the noise.",
+                "Ridge automatically selects the single best predictor from each "
+                "correlated cluster and discards the others, giving a simpler and more "
+                "accurate model than lasso does in this dense setting.",
+            ),
+            answer=0,
+            explanation=(
+                "When the truth is dense, sparsity throws away signal; ridge's smooth "
+                "shrinkage keeps all the small effects and stabilizes correlated "
+                "ones. When the truth is genuinely sparse, the tradeoff reverses and "
+                "lasso's selection helps. Neither dominates."
+            ),
+        ),
+    ),
+    "choosing-the-penalty": (
+        Question(
+            prompt="Why can training error never be used to choose the penalty λ?",
+            options=(
+                "It falls monotonically as λ weakens, so it always crowns λ = 0, the most overfit model in the family.",
+                "It is too expensive to evaluate at many candidate values of λ without holding out folds.",
+                "It has the wrong units, measuring squared error where the penalty is stated in absolute terms.",
+                "It equals the cross-validation error exactly, so it adds no information beyond what CV already gives.",
+            ),
+            answer=0,
+            explanation="Weakening the penalty lets the fit bend harder toward the data, so training error only ever decreases as λ falls, bottoming out at λ = 0. It measures effort, not generalization. The gap between training error and held-out error is precisely the overfitting that training error cannot see.",
+        ),
+        Question(
+            prompt="In k-fold cross-validation, what is each observation's contribution to CV(λ) computed from?",
+            options=(
+                "A model fit on every fold, including the one containing that observation, to use all the data.",
+                "A model fit on the folds other than the one containing it, so the point is predicted unseen.",
+                "The average of k separate models each fit on a single fold and scored on that same fold.",
+                "A model fit on the whole dataset, then re-scored k times with different random seeds.",
+            ),
+            answer=1,
+            explanation="Each point is scored by the model trained on the other k-1 folds, so its prediction is genuinely out-of-sample. Rotating the held-out fold predicts every point exactly once. This is what makes CV(λ) an estimate of generalization error rather than a restatement of training error.",
+        ),
+        Question(
+            prompt="For ridge regression, the effective degrees of freedom equal the sum over the design's singular values of d_j^2 / (d_j^2 + λ). As λ grows from 0 to infinity, this quantity does what?",
+            options=(
+                "Stays fixed at the parameter count p, since the number of coefficients never changes.",
+                "Jumps down by whole integers as coefficients are set exactly to zero one at a time.",
+                "Slides continuously from p down to 0, passing through non-integer values in between.",
+                "Rises from 0 up to p, because a larger penalty forces more directions to be estimated.",
+            ),
+            answer=2,
+            explanation="Each term is a dimmer switch: near 1 when a direction's scale dwarfs λ, near 0 when λ dwarfs it. The sum starts at p (all terms 1) and decays smoothly to 0, so complexity becomes a continuous dial. Unlike the lasso, ridge never sets a coefficient exactly to zero; it fades them fractionally.",
+        ),
+        Question(
+            prompt="What does the one-standard-error rule prescribe?",
+            options=(
+                "Pick the λ whose CV error is exactly one standard error below the overall minimum.",
+                "Widen the folds until the standard error of the CV curve shrinks below one unit of loss.",
+                "Take the smallest λ whose training error is within one standard error of the CV minimum.",
+                "Take the largest λ whose CV error is still within one standard error of the minimum.",
+            ),
+            answer=3,
+            explanation="It steps toward more regularization: among all λ within one fold-to-fold standard error of the best CV score, choose the largest, giving the simplest model that is statistically indistinguishable from the best. The reasoning is that differences smaller than the curve's own noise are not worth chasing.",
+        ),
+        Question(
+            prompt="You standardize all features and select variables using the full dataset, then run cross-validation to tune λ. What is wrong?",
+            options=(
+                "Nothing, as long as the same standardization is reused unchanged inside every training fold.",
+                "The preprocessing peeked at the held-out folds, so CV leaks information and reads optimistically.",
+                "Standardizing changes the units of λ, so its selected value no longer matches the unscaled model.",
+                "Variable selection should follow tuning, because λ determines how many variables to keep.",
+            ),
+            answer=1,
+            explanation="Any step that looks at the whole dataset before the split lets the held-out folds influence the fit, so the CV score is no longer an honest out-of-sample estimate. Preprocessing must happen inside each fold. And once λ itself is tuned by CV, that score is optimistic too, so a final untouched test set is needed to judge the tuned model.",
+        ),
+        Question(
+            prompt="Compared with five- or ten-fold CV, what is the characteristic drawback of leave-one-out cross-validation?",
+            options=(
+                "Its training sets are far too small, so every fitted model is badly biased toward underfitting.",
+                "It cannot be applied to linear smoothers, since no closed-form held-out error exists for them.",
+                "Its near-identical training sets make the fold scores highly correlated, inflating the estimate's variance.",
+                "It systematically prefers larger λ, because each fit sees almost the entire dataset at once.",
+            ),
+            answer=2,
+            explanation="Leave-one-out has low bias (training sets are nearly the full data) but its n folds overlap almost completely, so their scores are strongly correlated and the averaged estimate can have high variance. Five- or ten-fold CV trades a little bias for folds different enough to keep variance in check. For linear smoothers a closed form does exist, via the hat matrix diagonal.",
+        ),
+    ),
     "loss-functions": (
         Question(
             prompt="The best constant summary under absolute-error loss is the median rather than the mean. Which fact about expected absolute loss explains this?",

@@ -348,6 +348,90 @@ _TERMS: tuple[Term, ...] = (
         "Bayes decision rule",
         "The decision rule that minimizes Bayes risk for a given prior, equivalently the rule that minimizes posterior expected loss dataset by dataset. Under squared-error loss it returns the posterior mean, under absolute-error loss the posterior median, under 0-1 loss the posterior mode. Distinct from Bayes' rule the theorem, which computes the posterior itself.",
     ),
+    Term(
+        "Stein's paradox",
+        "The surprising fact that when you estimate three or more means at once under total squared-error loss, the vector of sample means is inadmissible: a shrinkage estimator beats it at every parameter value, even for unrelated quantities.",
+    ),
+    Term(
+        "James-Stein estimator",
+        "An estimator of a vector of means that shrinks every coordinate toward a common center by a single data-dependent factor. For three or more coordinates it has strictly smaller total risk than the sample mean everywhere.",
+    ),
+    Term(
+        "Borrowing strength",
+        "Estimating many quantities jointly by pulling their estimates toward a shared center, so the ensemble informs each one; also called partial pooling. The pooling corrects the scale of the noise, not the meaning of the quantities.",
+    ),
+    Term(
+        "Ridge regression",
+        "A regularized least-squares fit that adds a penalty on the sum of squared coefficients (the L2 penalty); it shrinks every coefficient smoothly toward zero but keeps them all nonzero.",
+    ),
+    Term(
+        "Lasso",
+        "A regularized least-squares fit that adds a penalty on the sum of absolute coefficient values (the L1 penalty); it can drive some coefficients exactly to zero, so it selects variables as it shrinks.",
+    ),
+    Term(
+        "L2 penalty",
+        "A regularization term equal to the sum of squared coefficients. As the penalty on magnitude behind ridge regression, it corresponds to a Gaussian prior on the coefficients.",
+    ),
+    Term(
+        "L1 penalty",
+        "A regularization term equal to the sum of absolute coefficient values. As the penalty behind the lasso, it corresponds to a Laplace prior and its constant slope at zero is what produces exact zeros.",
+    ),
+    Term(
+        "Sparsity",
+        "The property of a model in which most coefficients are exactly zero, so only a subset of the predictors is actually used; the lasso induces it, ridge does not.",
+    ),
+    Term(
+        "Laplace prior",
+        "The double-exponential prior, with density proportional to exp(-|beta|/b); its sharp cusp at zero and heavy tails make it the prior whose MAP estimate is the lasso fit.",
+    ),
+    Term(
+        "Cross-validation",
+        "A way to estimate a model's out-of-sample (generalization) error using only the data at hand, by repeatedly fitting on part of the sample and scoring on the held-out remainder. Used to choose tuning parameters such as a penalty.",
+    ),
+    Term(
+        "k-fold cross-validation",
+        "Cross-validation that splits the data into k roughly equal folds, then trains on k-1 folds and scores on the one held out, rotating so every fold is held out once, and averages the k held-out scores.",
+    ),
+    Term(
+        "Leave-one-out cross-validation",
+        "The extreme case of k-fold cross-validation with k equal to the sample size: each single observation is held out in turn. Low bias but often high variance, since the training sets barely differ.",
+    ),
+    Term(
+        "Training error",
+        "The average loss a model incurs on the very data it was fit to. It measures how hard the fit tried, not how well it generalizes, and falls as regularization weakens, so it cannot be used to choose a penalty.",
+    ),
+    Term(
+        "Generalization error",
+        "The expected loss a fitted model would incur on a fresh observation from the same process. The quantity a penalty should minimize, and what cross-validation estimates.",
+    ),
+    Term(
+        "Overfitting",
+        "Fitting a model so closely to the training data that it captures noise as if it were signal, giving low training error but poor generalization. The high-variance extreme, reached as the penalty goes to zero.",
+    ),
+    Term(
+        "Underfitting",
+        "Constraining a model so heavily that it misses real structure in the data, giving high error on both training and new data. The high-bias extreme, reached as the penalty grows large.",
+    ),
+    Term(
+        "Effective degrees of freedom",
+        "A continuous measure of a fitted model's complexity: how many parameters it effectively spends once regularization tethers its coefficients. For a linear smoother it is the trace of the hat matrix, sliding from the parameter count down toward zero as the penalty grows.",
+    ),
+    Term(
+        "Hat matrix",
+        "The matrix H that maps observed responses to fitted values, y-hat = H y, for a linear fit. Named because it 'puts the hat on y'; its trace gives the fit's effective degrees of freedom.",
+    ),
+    Term(
+        "Linear smoother",
+        "Any fitting method whose fitted values are a fixed linear map of the responses, y-hat = H y. Ridge regression, smoothing splines, and k-nearest-neighbors are examples, and all share the trace-of-H notion of complexity.",
+    ),
+    Term(
+        "One-standard-error rule",
+        "A model-selection heuristic that, among all penalties whose cross-validation error is within one standard error of the minimum, picks the largest (most regularized), favoring a simpler model that is statistically indistinguishable from the best.",
+    ),
+    Term(
+        "Degrees of freedom",
+        "The number of independent directions in which a fit is free to move to chase the data. For an unpenalized linear model it equals the parameter count; regularization replaces it with a smaller effective count.",
+    ),
 )
 
 
