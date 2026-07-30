@@ -3035,6 +3035,383 @@ def fig_test_interval_duality() -> Path:
     )
 
 
+def fig_efficiency_floor() -> Path:
+    """Plot: the MLE's sampling distribution tightening onto the information floor."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    theta = 1.0  # The true parameter.
+    info = 1.0  # Fisher information per observation, I(theta).
+    x = np.linspace(-0.4, 2.4, 700)
+
+    def bell(sd):
+        return np.exp(-0.5 * ((x - theta) / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
+
+    for n, color in ((5, VIOLET), (20, AMBER), (80, ACCENT)):
+        sd = 1.0 / np.sqrt(n * info)  # Cramér–Rao floor width: √(1/(n I)).
+        dens = bell(sd)
+        ax.plot(x, dens, color=color, linewidth=2.0, label=f"MLE, n = {n}")
+        ax.fill_between(x, dens, color=color, alpha=0.07)
+
+    # An inefficient but consistent competitor at the largest n: wider than the floor.
+    eff = 0.55  # Relative efficiency: it captures only 55% of the information.
+    sd_bad = 1.0 / np.sqrt(80 * info * eff)
+    ax.plot(
+        x,
+        bell(sd_bad),
+        color=BRICK,
+        linewidth=1.8,
+        linestyle="--",
+        label="inefficient, n = 80",
+    )
+
+    ax.axvline(theta, color=INK_SOFT, linestyle=":", linewidth=1.1)
+    ax.set_ylim(0, 4.4)
+    ax.set_xlim(x[0], x[-1])
+    ax.text(theta + 0.03, 4.2, "truth θ", color=INK_SOFT, fontsize=8, va="top")
+    ax.set_xlabel("estimate  θ̂")
+    ax.set_ylabel("sampling density")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0)
+    ax.annotate(
+        "width = √(1/(n·I(θ))),\nthe Cramér–Rao floor",
+        xy=(theta + 1.0 / np.sqrt(80), 2.4),
+        xytext=(theta + 0.42, 3.1),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.legend(loc="upper left", fontsize=7.5)
+    fig.tight_layout()
+    return save_plot(fig, "efficiency-floor.svg")
+
+
+def fig_superefficiency() -> Path:
+    """Plot: asymptotic risk vs the truth — the flat floor vs Hodges' dip-and-spike."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+
+    t = np.linspace(-1.2, 1.2, 900)
+    floor = np.ones_like(t)  # The MLE sits on the information bound everywhere.
+
+    # Hodges: a superefficient well at 0 paid for by tall risk peaks flanking it.
+    well = np.exp(-((t / 0.12) ** 2))  # ≈1 at θ=0, →0 away: the dip below the floor.
+    bump = np.exp(-(((np.abs(t) - 0.34) / 0.15) ** 2))  # peaks near |θ| = 0.34.
+    hodges = 1.0 - well + 3.2 * bump
+
+    ax.axhline(1.0, color=INK_SOFT, linestyle=":", linewidth=1.1)
+    ax.plot(t, floor, color=ACCENT, linewidth=2.4, label="maximum likelihood")
+    ax.plot(t, hodges, color=BRICK, linewidth=2.2, label="Hodges' estimator")
+
+    ax.set_ylim(0, 4.8)
+    ax.set_xlim(-1.2, 1.2)
+    ax.set_xlabel("true parameter  θ")
+    ax.set_ylabel("asymptotic risk  (n · variance)")
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0)
+    ax.text(
+        1.18,
+        1.18,
+        "information bound  I(θ)⁻¹",
+        color=ACCENT,
+        fontsize=8,
+        ha="right",
+        va="bottom",
+    )
+    ax.annotate(
+        "beats the bound\nonly at θ = 0",
+        xy=(0.02, 0.05),
+        xytext=(0.34, 0.42),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "pays here: the local\nminimax punishment",
+        xy=(-0.34, 3.2),
+        xytext=(-1.12, 3.9),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.legend(loc="upper right", fontsize=8)
+    fig.tight_layout()
+    return save_plot(fig, "superefficiency.svg")
+
+
+def fig_bootstrap_maximum() -> Path:
+    """Plot: the bootstrap distribution of the sample maximum is pinned to the
+    data's order statistics and cannot converge to the smooth truth."""
+    style_plot()
+    n = 30
+    theta = 1.0
+    rng = np.random.default_rng(7)
+    sample = np.sort(rng.uniform(0.0, theta, size=n))
+    m_obs = sample[-1]  # The observed maximum.
+
+    fig, (ax_true, ax_boot) = plt.subplots(2, 1, figsize=(6.4, 4.7), sharex=True)
+
+    x_lo, x_hi = 0.60, 1.03
+
+    # Top: the TRUE sampling distribution of the maximum. For n draws from
+    # Uniform(0, theta), the maximum has density n x^(n-1) / theta^n on [0, theta].
+    x = np.linspace(x_lo, x_hi, 500)
+    inside = (x >= 0) & (x <= theta)
+    dens = np.where(inside, n * np.power(np.clip(x, 0, theta), n - 1) / theta**n, 0.0)
+    ax_true.fill_between(
+        x, dens, color=ACCENT_SOFT, edgecolor=ACCENT, linewidth=1.6, zorder=3
+    )
+    ax_true.axvline(theta, color=INK_SOFT, linewidth=1.2, linestyle=(0, (2, 3)))
+    ax_true.axvline(m_obs, color=BRICK, linewidth=1.2, linestyle=(0, (4, 3)))
+    ax_true.set_ylim(0, n * 1.18)
+    ax_true.set_ylabel("true density")
+    ax_true.text(
+        theta - 0.004,
+        n * 1.05,
+        "θ",
+        color=INK_SOFT,
+        fontsize=10,
+        ha="right",
+        va="top",
+        fontweight="bold",
+    )
+    ax_true.text(
+        0.62,
+        n * 0.95,
+        "if you could resample the real population",
+        color=ACCENT,
+        fontsize=8.5,
+        ha="left",
+        va="top",
+        fontweight="bold",
+    )
+    ax_true.annotate(
+        "true mass lives here,\nbetween the data and θ",
+        xy=((m_obs + theta) / 2, n * 0.28),
+        xytext=(0.66, n * 0.62),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    # Bottom: the BOOTSTRAP distribution of the maximum from ONE fixed sample.
+    # P(max* = x_(k)) = (k/n)^n - ((k-1)/n)^n, an atom on each order statistic.
+    k = np.arange(1, n + 1)
+    pmf = (k / n) ** n - ((k - 1) / n) ** n
+    ax_boot.vlines(sample, 0, pmf, color=BRICK, linewidth=2.2, zorder=3)
+    ax_boot.plot(sample, pmf, "o", color=BRICK, markersize=4, zorder=4)
+    ax_boot.axvline(theta, color=INK_SOFT, linewidth=1.2, linestyle=(0, (2, 3)))
+    ax_boot.axvline(m_obs, color=BRICK, linewidth=1.2, linestyle=(0, (4, 3)))
+    ax_boot.set_ylim(0, pmf.max() * 1.28)
+    ax_boot.set_xlim(x_lo, x_hi)
+    ax_boot.set_ylabel("bootstrap probability")
+    ax_boot.set_xlabel("value of the sample maximum")
+    ax_boot.text(
+        0.62,
+        pmf.max() * 1.16,
+        "resampling the data with replacement",
+        color=BRICK,
+        fontsize=8.5,
+        ha="left",
+        va="top",
+        fontweight="bold",
+    )
+    ax_boot.annotate(
+        "63% of resamples return the\nobserved maximum exactly",
+        xy=(m_obs - 0.002, pmf[-1] * 0.9),
+        xytext=(0.63, pmf.max() * 0.62),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax_boot.text(
+        m_obs - 0.010,
+        pmf.max() * 1.22,
+        "observed max",
+        color=BRICK,
+        fontsize=8,
+        ha="right",
+        va="top",
+    )
+
+    fig.tight_layout()
+    return save_plot(fig, "bootstrap-maximum.svg")
+
+
+def fig_marchenko_pastur() -> Path:
+    """Plot: sample-covariance eigenvalues fan out into the Marchenko-Pastur bulk
+    even though every true eigenvalue equals one, shown for two ratios p / n."""
+    style_plot()
+    rng = np.random.default_rng(0)
+
+    ratios = (0.25, 0.5)  # p / n for the two panels.
+    p = 400
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.3), sharey=True)
+
+    for k, (ax, gamma) in enumerate(zip(axes, ratios)):
+        n = int(round(p / gamma))
+        x = rng.standard_normal((n, p))
+        s = (x.T @ x) / n  # Sample covariance; the true covariance is the identity.
+        eigs = np.linalg.eigvalsh(s)
+
+        ax.hist(
+            eigs,
+            bins=45,
+            density=True,
+            color=ACCENT_SOFT,
+            edgecolor=ACCENT,
+            linewidth=0.5,
+            label="sample eigenvalues" if k == 1 else None,
+        )
+
+        # The Marchenko-Pastur density: the limiting law as p, n grow with p/n fixed.
+        lo = (1.0 - np.sqrt(gamma)) ** 2
+        hi = (1.0 + np.sqrt(gamma)) ** 2
+        grid = np.linspace(lo, hi, 400)
+        mp = np.sqrt((hi - grid) * (grid - lo)) / (2.0 * np.pi * gamma * grid)
+        ax.plot(
+            grid,
+            mp,
+            color=AMBER,
+            linewidth=2.2,
+            label="Marchenko–Pastur law" if k == 1 else None,
+        )
+
+        # The truth: every eigenvalue of the identity is exactly 1, a single spike.
+        ax.axvline(1.0, color=BRICK, linewidth=1.6, linestyle=(0, (4, 3)))
+        top = ax.get_ylim()[1]
+        ax.annotate(
+            "truth:\nall = 1",
+            xy=(1.0, top * 0.62),
+            xytext=(1.0 + (hi - lo) * 0.13, top * 0.72),
+            color=BRICK,
+            fontsize=7.5,
+            arrowprops=dict(arrowstyle="-", color=BRICK, linewidth=0.8),
+        )
+        ax.set_title(f"p / n = {gamma:g}", loc="left", color=INK_SOFT)
+        ax.set_xlabel("sample eigenvalue λ")
+
+    axes[0].set_ylabel("density")
+    axes[1].legend(loc="upper right")
+    return save_plot(fig, "marchenko-pastur.svg")
+
+
+def fig_concentration_shell() -> Path:
+    """Plot: the length of a standard Gaussian vector concentrates near √p, so in
+    high dimensions the mass sits in a thin shell and the center is nearly empty."""
+    style_plot()
+    rng = np.random.default_rng(1)
+    dims = (2, 20, 200)
+    colors = (ACCENT, AMBER, VIOLET)
+    draws = 60000
+
+    fig, ax = plt.subplots(figsize=(6.6, 3.5))
+    for p, color in zip(dims, colors):
+        norms = np.sqrt(np.sum(rng.standard_normal((draws, p)) ** 2, axis=1))
+        ax.hist(
+            norms,
+            bins=130,
+            density=True,
+            color=color,
+            alpha=0.5,
+            histtype="stepfilled",
+            edgecolor="none",
+            label=f"p = {p}",
+        )
+        ax.axvline(np.sqrt(p), color=color, linewidth=1.1, linestyle=(0, (3, 3)))
+
+    ax.set_xlim(0, 16.5)
+    ax.set_xlabel("length of the vector  ‖x‖")
+    ax.set_ylabel("density")
+    ax.legend(loc="upper right", title="dimension")
+    ax.text(
+        0.3,
+        ax.get_ylim()[1] * 0.86,
+        "dashed lines mark √p,\nthe typical length",
+        color=MUTED,
+        fontsize=7.5,
+        va="top",
+    )
+    return save_plot(fig, "concentration-shell.svg")
+
+
+def fig_double_descent() -> Path:
+    """Plot: the double-descent risk curve. Test error traces the classical U up to
+    the interpolation threshold, peaks, then descends again in the overparameterized
+    regime — the classical picture is only the left half."""
+    style_plot()
+    noise = 0.35
+
+    def test_under(x):
+        return noise + 0.8 * (1.0 - x) + 0.15 * x / (1.0 - x)
+
+    def test_over(x):
+        return noise + 0.7 / ((x - 1.0) + 0.4)
+
+    under_x = np.linspace(0.03, 0.965, 300)
+    over_x = np.linspace(1.035, 3.0, 300)
+
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
+
+    # Regime shading: classical on the left, modern (overparameterized) on the right.
+    ax.axvspan(0, 1, color=ACCENT_SOFT, alpha=0.55)
+    ax.axvspan(1, 3, color=AMBER, alpha=0.08)
+
+    # The one test-error curve, in two branches around the p = n asymptote.
+    ax.plot(
+        under_x, test_under(under_x), color=ACCENT, linewidth=2.4, label="test error"
+    )
+    ax.plot(over_x, test_over(over_x), color=ACCENT, linewidth=2.4)
+
+    # Training error: falls to zero at the threshold and stays there (interpolation).
+    tr_x = np.linspace(0.03, 1.0, 120)
+    ax.plot(
+        tr_x,
+        0.9 * (1.0 - tr_x),
+        color=MUTED,
+        linewidth=1.4,
+        linestyle=(0, (2, 2)),
+        label="training error",
+    )
+    ax.plot([1.0, 3.0], [0.0, 0.0], color=MUTED, linewidth=1.4, linestyle=(0, (2, 2)))
+
+    # The interpolation threshold.
+    ax.axvline(1.0, color=BRICK, linewidth=1.4, linestyle=(0, (4, 3)))
+    ax.text(
+        1.04,
+        2.05,
+        "interpolation\nthreshold (p ≈ n)",
+        color=BRICK,
+        fontsize=7.5,
+        va="top",
+    )
+
+    ax.text(0.5, 1.3, "classical\nU-curve", color=INK_SOFT, fontsize=8.5, ha="center")
+    ax.text(
+        2.2,
+        1.02,
+        "modern regime:\nrisk descends again",
+        color=AMBER,
+        fontsize=8.5,
+        ha="center",
+    )
+
+    ax.set_xlim(0, 3)
+    ax.set_ylim(0, 2.2)
+    ax.set_xlabel("model complexity  (p / n)")
+    ax.set_ylabel("error")
+    ax.legend(loc="upper right")
+    return save_plot(fig, "double-descent.svg")
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -3245,6 +3622,15 @@ FIGURES = (
     fig_coverage_intervals,
     fig_credible_intervals,
     fig_test_interval_duality,
+    # Ch 19 · Asymptotic Efficiency
+    fig_efficiency_floor,
+    fig_superefficiency,
+    # Ch 20 · The Bootstrap
+    fig_bootstrap_maximum,
+    # Ch 21 · High-Dimensional Phenomena
+    fig_marchenko_pastur,
+    fig_concentration_shell,
+    fig_double_descent,
     # Cover and icons
     fig_cover,
     fig_icon,
