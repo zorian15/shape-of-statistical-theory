@@ -284,6 +284,70 @@ _TERMS: tuple[Term, ...] = (
         "Maximum a posteriori (MAP) estimate",
         "The parameter value at which the posterior density is highest — the single most probable value. Under a flat prior it coincides with the maximum-likelihood estimate, and it is what penalized (regularized) estimation computes.",
     ),
+    Term(
+        "Squared-error loss",
+        "The loss (c − y)^2, charging the square of how far an estimate c falls from the truth y. Its best constant summary of a distribution is the mean, and it is the loss under which the bias-variance decomposition holds.",
+    ),
+    Term(
+        "Absolute-error loss",
+        "The loss |c − y|, charging the raw distance of a miss rather than its square. Its best constant summary is the median, and its linear growth makes it robust to outliers.",
+    ),
+    Term(
+        "Huber loss",
+        "A loss that is quadratic for residuals within a threshold and linear beyond it, blending the small-error efficiency of squared-error loss with the outlier resistance of absolute-error loss. The threshold dials between the two extremes.",
+    ),
+    Term(
+        "0-1 loss",
+        "The loss that charges nothing for an exact hit and a flat penalty of one for any miss, regardless of size. Its best constant summary is the mode, and it underlies classification's most-probable-class rule.",
+    ),
+    Term(
+        "Quantile loss",
+        "An asymmetric loss, also called pinball loss, that charges an under-prediction slope tau and an over-prediction slope 1 − tau. Its minimizer is the tau-quantile of the distribution, so choosing tau chooses which quantile to estimate.",
+    ),
+    Term(
+        "Robustness",
+        "The property that a few extreme or corrupted observations cannot swing an estimate arbitrarily far. It follows from a loss whose penalty grows slowly (for example linearly) in the tails rather than quadratically.",
+    ),
+    Term(
+        "Median",
+        "The value that splits a distribution into two halves of probability one-half each. It is the constant summary that minimizes expected absolute-error loss.",
+    ),
+    Term(
+        "Mode",
+        "The most probable value of a distribution — the peak of its density or its most likely category. It is the constant summary that minimizes expected 0-1 loss.",
+    ),
+    Term(
+        "Decision rule",
+        "Any function that maps observed data to an action — an estimate, or a choice like accept versus reject. Estimators are decision rules; risk is how you grade one.",
+    ),
+    Term(
+        "Risk function",
+        "The expected loss of a decision rule when the truth is fixed at a given parameter value, averaged over the sampling distribution of the data. It is a function of the unknown parameter — one height per possible truth, so it is a whole curve rather than a single number.",
+    ),
+    Term(
+        "Dominance",
+        "One decision rule dominates another when its risk is no larger at every parameter value and strictly smaller at at least one. The dominated rule can be beaten everywhere at once, so there is never a reason to use it.",
+    ),
+    Term(
+        "Admissibility",
+        "A decision rule is admissible if no other rule dominates it, and inadmissible if some rule does. Admissibility is only a floor: it rules out being beaten everywhere, but an admissible rule can still be bad, and it does not by itself single out a best rule.",
+    ),
+    Term(
+        "Minimax",
+        "The criterion that judges a decision rule by its worst-case risk over the parameter and prefers the rule whose worst case is smallest. It buys a guarantee against the least favorable value of the unknown, at the cost of defending against truths that may be far from reality.",
+    ),
+    Term(
+        "Least favorable prior",
+        "The prior an adversary would choose to make your task hardest — the one that maximizes the Bayes risk of its own Bayes decision rule. Under broad conditions the minimax rule is exactly the Bayes decision rule for this prior.",
+    ),
+    Term(
+        "Bayes risk",
+        "The risk curve of a decision rule averaged against a prior distribution over the parameter, collapsing the whole curve to a single number. The rule that minimizes it is the Bayes decision rule for that prior.",
+    ),
+    Term(
+        "Bayes decision rule",
+        "The decision rule that minimizes Bayes risk for a given prior, equivalently the rule that minimizes posterior expected loss dataset by dataset. Under squared-error loss it returns the posterior mean, under absolute-error loss the posterior median, under 0-1 loss the posterior mode. Distinct from Bayes' rule the theorem, which computes the posterior itself.",
+    ),
 )
 
 

@@ -51,6 +51,221 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "loss-functions": (
+        Question(
+            prompt="The best constant summary under absolute-error loss is the median rather than the mean. Which fact about expected absolute loss explains this?",
+            options=(
+                "Its derivative at c is P(Y < c) minus P(Y > c), which vanishes only where equal mass sits on either side of c.",
+                "Its derivative at c is 2 times (c minus E[Y]), which vanishes exactly at the mean of Y and nowhere else.",
+                "Absolute loss is not differentiable at zero, so no stationary point exists and the median is chosen only by convention.",
+                "Its second derivative is a positive constant, so the loss is minimized at the arithmetic average of the sample values.",
+            ),
+            answer=0,
+            explanation="Raising c helps for every point below it and hurts for every point above, so the slope is the difference of those two probabilities; it is zero when half the mass lies on each side, which is the definition of the median. The 2(c − E[Y]) slope is the one for squared error, and it lands on the mean.",
+        ),
+        Question(
+            prompt="A single gross outlier is added to a fixed sample. What happens to the squared-error minimizer and the absolute-error minimizer?",
+            options=(
+                "Both shift toward the outlier by the same amount, since each loss is increasing in the size of the error.",
+                "The mean moves toward the outlier without bound as it grows, while the median barely shifts at all.",
+                "The median moves toward the outlier while the mean stays fixed, because absolute loss weights large errors more heavily.",
+                "Neither moves, because one point cannot change a minimizer computed over the whole sample.",
+            ),
+            answer=1,
+            explanation="Squared loss charges an outlier the square of its distance, so relieving that penalty drags the mean arbitrarily far; absolute loss charges only the distance, so the outlier gets a bounded vote and the median is essentially unmoved. This bounded influence is exactly what 'robustness' names.",
+        ),
+        Question(
+            prompt="A colleague says squared-error loss produces a 'more accurate' estimate than absolute-error loss. What is the right correction?",
+            options=(
+                "Squared error is more accurate only for symmetric data, where the mean and median happen to coincide anyway.",
+                "Absolute error is the more accurate of the two because it is robust to outliers in every distribution.",
+                "Neither is more accurate; they optimize different targets, and squared loss merely penalizes large errors more, yielding the mean.",
+                "Squared error is more accurate whenever the sample is large, since the mean is a consistent estimator.",
+            ),
+            answer=2,
+            explanation="Calling one loss 'accurate' smuggles in an unstated cost structure. The two minimize different functionals — the mean and the median — and which you want depends on what your mistakes cost, not on any intrinsic accuracy ranking.",
+        ),
+        Question(
+            prompt="Huber loss is quadratic for small residuals and linear for large ones. What does that shape buy?",
+            options=(
+                "Exact unbiasedness for any error distribution, which neither squared nor absolute loss can offer on its own.",
+                "A closed-form minimizer that is always a fixed weighted average of the sample mean and the sample median.",
+                "Full independence from its threshold, since the transition point has no effect on the resulting fit.",
+                "Near-squared efficiency on the well-behaved bulk of the data, plus the outlier resistance of absolute loss in the tails.",
+            ),
+            answer=3,
+            explanation="The quadratic core keeps the good small-error behavior of squared loss where the data is clean, and the linear tails cap an outlier's influence the way absolute loss does. The threshold is a genuine dial: sending it to infinity recovers squared error, to zero recovers absolute error.",
+        ),
+        Question(
+            prompt="Pinball (quantile) loss with parameter tau = 0.9 does what?",
+            options=(
+                "Penalizes under-predictions nine times as steeply as over-predictions, so its minimizer is the 0.9 quantile.",
+                "Penalizes over-predictions nine times as steeply as under-predictions, so its minimizer is the 0.1 quantile.",
+                "Penalizes both directions equally but scaled by 0.9, so its minimizer is still the median of the data.",
+                "Penalizes large errors quadratically and small errors linearly, so its minimizer is a trimmed mean.",
+            ),
+            answer=0,
+            explanation="The slopes are tau and 1 − tau, so at tau = 0.9 the ratio is nine to one against under-prediction; the minimizer climbs until only ten percent of the mass lies above it — the 0.9 quantile. Sweeping tau from 0 to 1 traces the whole distribution one quantile at a time.",
+        ),
+        Question(
+            prompt="Under 0–1 loss, the optimal constant summary of a distribution is its mode. Why the mode rather than the mean or median?",
+            options=(
+                "0–1 loss grows with the error size, so it rewards the value nearest to the bulk of the probability mass.",
+                "0–1 loss is symmetric, so it selects the balance point of the distribution, which is the mean.",
+                "0–1 loss counts only exact hits, so the best fixed guess is the single most probable value.",
+                "0–1 loss integrates over the tails, so it favors the median as the most central choice.",
+            ),
+            answer=2,
+            explanation="Because a near miss and a wild miss are charged identically, being close earns nothing; the only way to lower expected loss is to raise the chance of an exact hit, which means parking on the peak of the density. This is why classification uses the most-probable-class rule.",
+        ),
+    ),
+    "risk-and-decision-theory": (
+        Question(
+            prompt=(
+                "The risk of a decision rule is a function of what — that is, what "
+                "does it assign a number to?"
+            ),
+            options=(
+                "The unknown parameter: it gives one expected-loss value for each "
+                "value the truth could take.",
+                "The observed dataset: it gives the loss the rule actually incurred "
+                "on the particular sample you drew.",
+                "The estimate the rule produced, scored against the very data it was "
+                "computed from.",
+                "The prior distribution, averaging the rule's loss over your prior "
+                "beliefs about the parameter.",
+            ),
+            answer=0,
+            explanation=(
+                "Risk fixes the truth at theta and averages the loss over the "
+                "sampling distribution, so it returns one height per theta — a curve, "
+                "not a number. The loss on the sample you drew (the second option) is "
+                "the random quantity risk averages away; averaging risk against a "
+                "prior (the fourth) gives the Bayes risk, a single number, which is a "
+                "later step, not the risk itself."
+            ),
+        ),
+        Question(
+            prompt="A decision rule is inadmissible exactly when:",
+            options=(
+                "some other rule has risk no larger at every parameter value and "
+                "strictly smaller at at least one value.",
+                "some other rule has smaller risk at the single parameter value that "
+                "happens to be the true one.",
+                "its worst-case risk over the parameter is larger than that of some "
+                "other available rule.",
+                "its Bayes risk under the chosen prior exceeds the Bayes risk of the "
+                "Bayes decision rule.",
+            ),
+            answer=0,
+            explanation=(
+                "Inadmissibility means being dominated: beaten weakly everywhere and "
+                "strictly somewhere. The 'true value' option is a trap — you never "
+                "know the true theta, so you cannot rank rules by their risk there. "
+                "Losing on worst-case risk (minimax) or on Bayes risk (Bayes) is a "
+                "different, weaker kind of loss and does not make a rule inadmissible."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Minimax rules frequently turn out to have constant risk across the "
+                "whole parameter space. Why?"
+            ),
+            options=(
+                "Leveling the curve removes any bulge an adversary could exploit, so "
+                "the maximum is pushed as low as it can go.",
+                "Constant risk is a requirement for admissibility, and every minimax "
+                "rule is guaranteed to be admissible.",
+                "A minimax rule discards the data by construction, so its risk simply "
+                "cannot depend on the parameter.",
+                "Averaging the risk against the least favorable prior mechanically "
+                "forces the resulting curve to be horizontal.",
+            ),
+            answer=0,
+            explanation=(
+                "Minimizing the peak of a risk curve tends to flatten it — the "
+                "'equalizer' intuition — because any point left bulging is a point the "
+                "adversary aims at. The least-favorable-prior option is the tempting "
+                "near-miss: a minimax rule often IS Bayes against that prior, but the "
+                "averaging does not by itself force a flat curve; the equalizing "
+                "pressure comes from minimizing the maximum."
+            ),
+        ),
+        Question(
+            prompt=(
+                "You adopt squared-error loss and want the Bayes decision rule. For a "
+                "given dataset, the action it outputs is:"
+            ),
+            options=(
+                "the posterior mean, since the mean minimizes expected squared error "
+                "under the posterior.",
+                "the posterior median, since it splits the posterior probability into "
+                "two equal halves.",
+                "the posterior mode, the single most probable parameter value given "
+                "the data.",
+                "the maximum-likelihood estimate, since squared loss discards the "
+                "prior entirely.",
+            ),
+            answer=0,
+            explanation=(
+                "Minimizing Bayes risk is the same as minimizing posterior expected "
+                "loss dataset by dataset, and the loss selects the summary: squared "
+                "error picks the mean, absolute error the median, and 0-1 loss the "
+                "mode. The MLE option is wrong on two counts — the Bayes rule keeps "
+                "the prior, and even a flat prior would give the posterior mean, not "
+                "the mode the MLE tracks."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Two estimators have risk curves that cross. Which statement is "
+                "correct?"
+            ),
+            options=(
+                "Neither dominates the other, so which is 'better' depends on whether "
+                "you judge by a minimax or a Bayes criterion.",
+                "The one with lower risk at the true parameter dominates it, making "
+                "that estimator the admissible choice.",
+                "Whichever has the smaller worst-case risk dominates the other, by "
+                "the definition of dominance.",
+                "They must share the same Bayes risk under every prior, because their "
+                "curves intersect somewhere.",
+            ),
+            answer=0,
+            explanation=(
+                "Crossing curves cannot be ordered by dominance, which is the whole "
+                "reason minimax and Bayes exist as tie-breakers. Dominance requires "
+                "one curve weakly below the other everywhere; a smaller worst case is "
+                "a minimax judgment, not dominance; and intersecting curves can have "
+                "wildly different Bayes risks depending on where the prior puts mass."
+            ),
+        ),
+        Question(
+            prompt=(
+                "Under broad conditions, a minimax rule can be re-described in "
+                "Bayesian terms as:"
+            ),
+            options=(
+                "the Bayes decision rule for the least favorable prior, the prior "
+                "that makes the smallest achievable Bayes risk as large as possible.",
+                "the Bayes decision rule for a flat prior, which assigns every "
+                "parameter value equal weight before the data.",
+                "the rule achieving the lowest average risk taken across all priors "
+                "one could possibly write down.",
+                "the admissible rule whose entire risk curve lies below that of every "
+                "other admissible rule.",
+            ),
+            answer=0,
+            explanation=(
+                "Minimax is Bayes aimed at the adversary's prior: the least "
+                "favorable prior is the one maximizing the Bayes risk of its own "
+                "Bayes rule, and that rule is minimax. A flat prior is a common but "
+                "wrong guess (least favorable priors are rarely uniform), and the "
+                "last option describes a rule that dominates all others — which, for "
+                "crossing curves, cannot exist."
+            ),
+        ),
+    ),
     "what-makes-a-good-estimator": (
         Question(
             prompt=(
