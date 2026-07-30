@@ -1805,6 +1805,681 @@ def fig_quantile_loss() -> Path:
     return save_plot(fig, "quantile-loss.svg")
 
 
+def fig_constraint_geometry() -> Path:
+    """Plot: the L2 ball vs L1 diamond meeting elliptical residual contours.
+
+    Ridge's round ball is touched off the axes (both coefficients nonzero);
+    lasso's diamond is touched at a corner on an axis (one coefficient exactly
+    zero). The constrained minima are found on a grid so the tangencies are
+    correct rather than hand-placed. The L1 budget satisfies t <= h1 - w*h2, the
+    condition that forces the first-quadrant fit onto the corner.
+    """
+    style_plot()
+    fig, (ax_l2, ax_l1) = plt.subplots(1, 2, figsize=(8.2, 4.1))
+
+    # Elliptical residual contours: RSS(b) = (b1 - h1)^2 + w * (b2 - h2)^2,
+    # centered on the least-squares solution and taller in the b2 direction.
+    h1, h2 = 2.55, 0.72  # The unconstrained least-squares solution.
+    w = 2.15  # Anisotropy: b2 deviations cost more, so the contours are elliptical.
+
+    grid = np.linspace(-1.15, 3.15, 700)
+    B1, B2 = np.meshgrid(grid, grid)
+    rss = (B1 - h1) ** 2 + w * (B2 - h2) ** 2
+
+    r = 1.08  # L2 budget radius.
+    t = 0.95  # L1 budget; t <= h1 - w*h2 guarantees the corner solution.
+
+    def constrained_min(mask):
+        """Return the grid point of least RSS inside the feasible region."""
+        masked = np.where(mask, rss, np.inf)
+        idx = np.unravel_index(np.argmin(masked), masked.shape)
+        return B1[idx], B2[idx]
+
+    sol_l2 = constrained_min(B1**2 + B2**2 <= r**2)
+    sol_l1 = constrained_min(np.abs(B1) + np.abs(B2) <= t)
+
+    def draw(ax, region_xy, sol, title, sparse):
+        # A ring of elliptical contours, the middle one passing through the fit.
+        sol_level = (sol[0] - h1) ** 2 + w * (sol[1] - h2) ** 2
+        levels = sol_level * np.array([0.16, 0.42, 0.72, 1.0, 1.45, 2.1])
+        ax.contour(
+            B1, B2, rss, levels=levels, colors=ACCENT, linewidths=0.9, alpha=0.55
+        )
+
+        # Faint axes through the origin so "on an axis" reads clearly.
+        ax.axhline(0, color=RULE_STRONG, linewidth=0.9, zorder=0)
+        ax.axvline(0, color=RULE_STRONG, linewidth=0.9, zorder=0)
+
+        # The budget region.
+        ax.fill(
+            *region_xy, facecolor=ACCENT_SOFT, edgecolor=AMBER, linewidth=1.8, zorder=1
+        )
+
+        # The least-squares solution (ellipse center) and the constrained fit.
+        ax.plot(
+            [h1],
+            [h2],
+            marker="+",
+            color=INK_SOFT,
+            markersize=10,
+            markeredgewidth=1.6,
+            zorder=5,
+        )
+        ax.text(
+            h1 + 0.08,
+            h2 + 0.12,
+            "least squares",
+            color=INK_SOFT,
+            fontsize=7.5,
+            va="bottom",
+        )
+        ax.plot([sol[0]], [sol[1]], marker="o", color=BRICK, markersize=7, zorder=6)
+
+        if sparse:
+            ax.annotate(
+                "corner:\nβ₂ = 0",
+                xy=(sol[0], sol[1]),
+                xytext=(sol[0] - 0.15, sol[1] - 0.95),
+                color=BRICK,
+                fontsize=8,
+                ha="center",
+                arrowprops=dict(arrowstyle="->", color=BRICK, lw=1.0),
+            )
+        else:
+            ax.annotate(
+                "off-axis:\nboth nonzero",
+                xy=(sol[0], sol[1]),
+                xytext=(sol[0] - 1.05, sol[1] + 0.75),
+                color=BRICK,
+                fontsize=8,
+                ha="center",
+                arrowprops=dict(arrowstyle="->", color=BRICK, lw=1.0),
+            )
+
+        ax.set_title(title, loc="left")
+        ax.set_xlabel("β₁")
+        ax.set_ylabel("β₂")
+        ax.set_xlim(-1.15, 3.15)
+        ax.set_ylim(-1.15, 2.35)
+        ax.set_aspect("equal")
+        ax.set_xticks([0])
+        ax.set_yticks([0])
+
+    # The L2 ball as a smooth ring; the L1 diamond as its four corners.
+    ang = np.linspace(0, 2 * np.pi, 160)
+    ball_xy = (r * np.cos(ang), r * np.sin(ang))
+    diamond_xy = ([t, 0, -t, 0], [0, t, 0, -t])
+
+    draw(ax_l2, ball_xy, sol_l2, "Ridge: the round L2 ball", sparse=False)
+    draw(ax_l1, diamond_xy, sol_l1, "Lasso: the L1 diamond", sparse=True)
+
+    fig.tight_layout()
+    return save_plot(fig, "constraint-geometry.svg")
+
+
+def fig_prior_densities() -> Path:
+    """Plot: the Gaussian (ridge) and Laplace (lasso) priors at equal variance.
+
+    Both are centered at zero with variance one, so the shapes alone tell the
+    story: the Laplace has a sharp cusp at zero and heavier tails, the
+    probabilistic face of sparsity.
+    """
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.7))
+
+    x = np.linspace(-4.2, 4.2, 800)
+    s = 1.0  # Gaussian standard deviation, so variance 1.
+    b = 1.0 / np.sqrt(2.0)  # Laplace scale giving variance 2 b^2 = 1.
+
+    gauss = np.exp(-0.5 * (x / s) ** 2) / (s * np.sqrt(2 * np.pi))
+    laplace = np.exp(-np.abs(x) / b) / (2 * b)
+
+    ax.fill_between(x, laplace, color=AMBER, alpha=0.10)
+    ax.plot(x, gauss, color=ACCENT, linewidth=2.2, label="Gaussian prior → ridge")
+    ax.plot(x, laplace, color=AMBER, linewidth=2.2, label="Laplace prior → lasso")
+
+    ax.annotate(
+        "cusp at zero:\nextra belief β ≈ 0",
+        xy=(0, laplace[np.argmin(np.abs(x))]),
+        xytext=(0.75, 0.63),
+        color=AMBER,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "heavier tails:\na few large β allowed",
+        xy=(3.1, laplace[np.argmin(np.abs(x - 3.1))]),
+        xytext=(1.55, 0.34),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+
+    ax.set_xlabel("coefficient  β")
+    ax.set_ylabel("prior density")
+    ax.set_xlim(-4.2, 4.2)
+    ax.set_ylim(0, 0.78)
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0)
+    ax.legend(loc="upper right")
+
+    fig.tight_layout()
+    return save_plot(fig, "prior-densities.svg")
+
+
+def fig_kfold_schematic() -> Path:
+    """Diagram: a data bar split into k folds, each held out once in rotation."""
+    width, height = 720, 430
+    body = [eyebrow(30, 40, "HOLD OUT EACH FOLD ONCE")]
+
+    k = 5
+    x0, bar_w = 70, 470
+    fold_w = bar_w / k
+    gap = 3.0
+
+    # Top: the full dataset, one bar split into k folds.
+    top_y, top_h = 66, 40
+    body.append(
+        f'<text x="{x0}" y="{top_y - 14:.1f}" font-size="12" font-weight="600" '
+        f'fill="{INK_SOFT}">all data, split into {k} folds</text>'
+    )
+    for f in range(k):
+        fx = x0 + f * fold_w
+        body += node_box(
+            fx + gap / 2,
+            top_y,
+            fold_w - gap,
+            top_h,
+            f"fold {f + 1}",
+            fill=ACCENT_SOFT,
+            stroke=ACCENT,
+            font_size=11,
+            text_fill=ACCENT,
+        )
+
+    # Rounds: each row trains on all but one fold; the held-out fold is highlighted.
+    row_y0, row_h, row_step = 148, 34, 48
+    for r in range(k):
+        ry = row_y0 + r * row_step
+        for f in range(k):
+            fx = x0 + f * fold_w
+            if f == r:
+                fill, stroke, tf, lab = AMBER, AMBER, "#ffffff", "test"
+            else:
+                fill, stroke, tf, lab = "#ffffff", RULE_STRONG, MUTED, "train"
+            body += node_box(
+                fx + gap / 2,
+                ry,
+                fold_w - gap,
+                row_h,
+                lab,
+                fill=fill,
+                stroke=stroke,
+                font_size=10,
+                text_fill=tf,
+            )
+        body.append(
+            f'<text x="{x0 - 12:.1f}" y="{ry + row_h / 2 + 4:.1f}" font-size="11" '
+            f'text-anchor="end" fill="{MUTED}">round {r + 1}</text>'
+        )
+
+    # The averaging brace on the right, folding k scores into one estimate.
+    br_x = x0 + bar_w + 24
+    body.append(arrow_marker(INK_SOFT, "kf_arrow"))
+    body.append(
+        f'<line x1="{br_x:.1f}" y1="{row_y0:.1f}" x2="{br_x:.1f}" '
+        f'y2="{row_y0 + (k - 1) * row_step + row_h:.1f}" stroke="{RULE_STRONG}" '
+        f'stroke-width="1.4"/>'
+    )
+    mid_y = row_y0 + ((k - 1) * row_step + row_h) / 2
+    body.append(
+        f'<line x1="{br_x:.1f}" y1="{mid_y:.1f}" x2="{br_x + 22:.1f}" y2="{mid_y:.1f}" '
+        f'stroke="{INK_SOFT}" stroke-width="1.4" marker-end="url(#kf_arrow)"/>'
+    )
+    body.append(
+        f'<text x="{br_x + 30:.1f}" y="{mid_y - 6:.1f}" font-size="11.5" '
+        f'font-weight="700" fill="{INK}">average</text>'
+    )
+    body.append(
+        f'<text x="{br_x + 30:.1f}" y="{mid_y + 11:.1f}" font-size="11" '
+        f'fill="{MUTED}">= CV(λ)</text>'
+    )
+
+    return write_svg(
+        "k-fold-schematic.svg",
+        svg_doc(
+            width,
+            height,
+            "A data bar split into five folds, with five rounds below it: each round "
+            "holds out one fold for testing and trains on the rest, and the five "
+            "held-out scores average into one cross-validation estimate.",
+            body,
+        ),
+    )
+
+
+def fig_cross_validation_curve() -> Path:
+    """Plot: CV error as a U over the penalty, with training error sliding down."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.9))
+
+    log_lam = np.linspace(-4.0, 4.0, 400)
+    lam = 10.0**log_lam
+
+    # Training error rises monotonically with the penalty: lowest at lambda = 0.
+    train = 0.10 + 0.60 / (1.0 + np.exp(-1.0 * (log_lam - 1.0)))
+
+    # CV error is a U: a variance term high at small lambda (overfitting) falls as
+    # the penalty grows, while a bias term (underfitting) climbs with it.
+    variance = 0.85 / (1.0 + np.exp(1.3 * (log_lam + 0.5)))
+    bias = 0.015 * np.exp(0.9 * log_lam)
+    cv = 0.30 + variance + bias
+    se = 0.05 + 0.02 * (np.abs(log_lam) / 4.0)  # Fold-to-fold spread band.
+
+    i_min = int(np.argmin(cv))
+    lam_min = lam[i_min]
+    # One-standard-error rule: largest lambda whose CV is within 1 SE of the min.
+    thresh = cv[i_min] + se[i_min]
+    right = np.where((np.arange(len(cv)) > i_min) & (cv <= thresh))[0]
+    i_1se = right[-1] if len(right) else i_min
+    lam_1se = lam[i_1se]
+
+    ax.fill_between(lam, cv - se, cv + se, color=ACCENT_SOFT, alpha=0.7, linewidth=0)
+    ax.plot(lam, cv, color=ACCENT, linewidth=2.4, label="cross-validation error")
+    ax.plot(
+        lam,
+        train,
+        color=MUTED,
+        linewidth=2.0,
+        linestyle=(0, (5, 3)),
+        label="training error",
+    )
+
+    ax.plot([lam_min], [cv[i_min]], marker="o", color=ACCENT, markersize=7, zorder=6)
+    ax.axvline(lam_min, color=INK_SOFT, linewidth=1.0, linestyle=(0, (2, 3)))
+    ax.plot([lam_1se], [cv[i_1se]], marker="o", color=AMBER, markersize=7, zorder=6)
+    ax.axvline(lam_1se, color=AMBER, linewidth=1.0, linestyle=(0, (2, 3)))
+
+    ax.set_xscale("log")
+    ax.set_xlim(lam[0], lam[-1])
+    ax.set_ylim(0, 1.55)
+    ax.set_xlabel("penalty  λ   (log scale)")
+    ax.set_ylabel("prediction error")
+
+    ax.annotate(
+        "CV minimum",
+        xy=(lam_min, cv[i_min]),
+        xytext=(lam_min * 0.02, 0.72),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "one-SE choice",
+        xy=(lam_1se, cv[i_1se]),
+        xytext=(lam_1se * 6.0, 0.80),
+        color=AMBER,
+        fontsize=8,
+        ha="center",
+        arrowprops=dict(arrowstyle="->", color=AMBER, lw=1.0),
+    )
+    ax.text(lam[6], cv[6] + 0.04, "overfit", color=MUTED, fontsize=8, va="bottom")
+    ax.text(
+        lam[-6],
+        cv[-6] + 0.04,
+        "underfit",
+        color=MUTED,
+        fontsize=8,
+        ha="right",
+        va="bottom",
+    )
+    ax.text(
+        lam[3],
+        0.045,
+        "training error keeps falling → picks λ = 0",
+        color=MUTED,
+        fontsize=7.5,
+        va="bottom",
+    )
+    ax.legend(loc="upper center")
+    fig.tight_layout()
+    return save_plot(fig, "cross-validation-curve.svg")
+
+
+def fig_effective_degrees_of_freedom() -> Path:
+    """Plot: ridge effective degrees of freedom sliding from p down to zero."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.7))
+
+    # A spread of squared singular values: a few large, some middling, a shaky tail.
+    rng = np.random.default_rng(3)
+    p = 12
+    d2 = np.sort(
+        np.concatenate(
+            [
+                rng.uniform(6.0, 14.0, 3),
+                rng.uniform(0.6, 3.0, 5),
+                rng.uniform(0.02, 0.3, 4),
+            ]
+        )
+    )[::-1]
+
+    log_lam = np.linspace(-3.0, 4.0, 400)
+    lam = 10.0**log_lam
+    df = np.array([(d2 / (d2 + L)).sum() for L in lam])
+
+    ax.axhline(p, color=MUTED, linewidth=1.0, linestyle=(0, (4, 3)))
+    ax.text(
+        lam[-3],
+        p - 0.5,
+        f"p = {p}  (least squares)",
+        color=MUTED,
+        fontsize=8,
+        va="top",
+        ha="right",
+    )
+    for lvl in range(0, p + 1, 3):
+        ax.axhline(lvl, color=RULE, linewidth=0.7, zorder=0)
+
+    ax.plot(lam, df, color=ACCENT, linewidth=2.6)
+    ax.fill_between(lam, 0, df, color=ACCENT_SOFT, alpha=0.5, linewidth=0)
+
+    ax.set_xscale("log")
+    ax.set_xlim(lam[0], lam[-1])
+    ax.set_ylim(0, p + 1.4)
+    ax.set_xlabel("penalty  λ   (log scale)")
+    ax.set_ylabel("effective degrees of freedom  tr(Hλ)")
+
+    ax.annotate(
+        "full complexity",
+        xy=(lam[10], df[10]),
+        xytext=(lam[55], p - 3.6),
+        color=INK_SOFT,
+        fontsize=8,
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.annotate(
+        "collapses toward zero",
+        xy=(lam[-40], df[-40]),
+        xytext=(lam[205], 5.6),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    fig.tight_layout()
+    return save_plot(fig, "effective-degrees-of-freedom.svg")
+
+
+def fig_stein_risk() -> Path:
+    """Plot: total risk of the sample mean (flat) vs James-Stein (below everywhere)."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.6, 3.8))
+
+    p = 8  # Number of means estimated at once; unit noise per coordinate.
+    dist = np.linspace(0.0, 6.0, 500)  # Distance of the truth from the center.
+    lam = dist**2  # Noncentrality: squared distance from the shrinkage center.
+
+    mean_risk = np.full_like(dist, float(p))  # Sample mean: flat at p.
+    # Standard approximation E[1/chi^2_p(lam)] ~ 1/(p - 2 + lam) gives the shape.
+    js_risk = p - (p - 2) ** 2 / (p - 2 + lam)
+
+    ax.fill_between(dist, js_risk, mean_risk, color=AMBER, alpha=0.12)
+    ax.plot(dist, mean_risk, color=ACCENT, lw=2.4, label="sample mean  (report each X)")
+    ax.plot(dist, js_risk, color=AMBER, lw=2.4, label="James-Stein  (shrink to center)")
+
+    ax.plot([0.0], [2.0], marker="o", color=INK, markersize=4, zorder=6)
+    ax.annotate(
+        "biggest win at the center:\nrisk falls from 8 to 2",
+        xy=(0.0, 2.0),
+        xytext=(0.9, 3.0),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.text(
+        2.9,
+        7.75,
+        "approaches but never reaches\nthe sample mean",
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        0.1, 8.2, "flat: same risk wherever the truth sits", color=ACCENT, fontsize=8
+    )
+
+    ax.set_xlabel("distance of the true means from the shrinkage center")
+    ax.set_ylabel("total risk  (expected sum of squared errors)")
+    ax.set_xlim(0, 6)
+    ax.set_ylim(0, 9)
+    ax.legend(loc="lower right", handlelength=1.6)
+    fig.tight_layout()
+    return save_plot(fig, "stein-risk.svg")
+
+
+def _star(cx: float, cy: float, r: float, fill: str) -> str:
+    """Return a five-pointed star centered at (cx, cy) with circumradius r."""
+    import math
+
+    pts = []
+    for k in range(10):
+        rad = r if k % 2 == 0 else r * 0.42
+        ang = -math.pi / 2 + k * math.pi / 5
+        pts.append(f"{cx + rad * math.cos(ang):.1f},{cy + rad * math.sin(ang):.1f}")
+    return f'<polygon points="{" ".join(pts)}" fill="{fill}"/>'
+
+
+def fig_stein_overshoot() -> Path:
+    """Diagram: high-dimensional noise is perpendicular, so X overshoots theta."""
+    import math
+
+    width, height = 700, 430
+    body = [
+        eyebrow(30, 40, "THE RAW ESTIMATE IS TOO LONG"),
+        arrow_marker(AMBER, "ov_pull"),
+    ]
+
+    ox, oy = 90.0, 350.0  # Origin (the shrinkage center).
+    tx, ty = 430.0, 250.0  # Tip of the true vector theta.
+    xx, xy = 560.0, 90.0  # The observed point X.
+
+    body.append(f'<circle cx="{ox}" cy="{oy}" r="5" fill="{INK}"/>')
+    body.append(
+        f'<text x="{ox - 6:.1f}" y="{oy + 22:.1f}" font-size="12" '
+        f'text-anchor="middle" fill="{INK_SOFT}">center</text>'
+    )
+
+    # Leg 1: the true vector theta, origin to its tip.
+    body.append(
+        f'<line x1="{ox}" y1="{oy}" x2="{tx}" y2="{ty}" stroke="{ACCENT}" '
+        f'stroke-width="2.6"/>'
+    )
+    body.append(
+        f'<text x="{(ox + tx) / 2 - 6:.1f}" y="{(oy + ty) / 2 + 26:.1f}" '
+        f'font-size="14" font-style="italic" fill="{ACCENT}">true θ</text>'
+    )
+    body.append(f'<circle cx="{tx}" cy="{ty}" r="5" fill="{ACCENT}"/>')
+
+    # Leg 2: the noise, rising at a right angle from the tip of theta to X.
+    body.append(
+        f'<line x1="{tx}" y1="{ty}" x2="{xx}" y2="{xy}" stroke="{MUTED}" '
+        f'stroke-width="2.2" stroke-dasharray="6 4"/>'
+    )
+    body.append(
+        f'<text x="{(tx + xx) / 2 + 34:.1f}" y="{(ty + xy) / 2:.1f}" '
+        f'font-size="12.5" fill="{MUTED}">noise ⊥ θ</text>'
+    )
+
+    # The right-angle marker at the tip of theta.
+    d1 = (ox - tx, oy - ty)
+    d2 = (xx - tx, xy - ty)
+    n1 = math.hypot(*d1)
+    n2 = math.hypot(*d2)
+    s = 16.0
+    u1 = (d1[0] / n1 * s, d1[1] / n1 * s)
+    u2 = (d2[0] / n2 * s, d2[1] / n2 * s)
+    body.append(
+        f'<path d="M {tx + u1[0]:.1f} {ty + u1[1]:.1f} '
+        f"L {tx + u1[0] + u2[0]:.1f} {ty + u1[1] + u2[1]:.1f} "
+        f'L {tx + u2[0]:.1f} {ty + u2[1]:.1f}" fill="none" '
+        f'stroke="{MUTED}" stroke-width="1.2"/>'
+    )
+
+    # The hypotenuse: origin to X, the observed vector.
+    body.append(
+        f'<line x1="{ox}" y1="{oy}" x2="{xx}" y2="{xy}" stroke="{BRICK}" '
+        f'stroke-width="2.6"/>'
+    )
+    body.append(f'<circle cx="{xx}" cy="{xy}" r="5" fill="{BRICK}"/>')
+    body.append(
+        f'<text x="{xx + 14:.1f}" y="{xy + 4:.1f}" font-size="14" '
+        f'fill="{BRICK}">observed X</text>'
+    )
+    mx, my = (ox + xx) / 2 - 40, (oy + xy) / 2 - 8
+    body.append(
+        f'<text x="{mx:.1f}" y="{my:.1f}" font-size="12.5" fill="{BRICK}" '
+        f'transform="rotate(-25 {mx:.1f} {my:.1f})">longer than θ</text>'
+    )
+
+    # The pull: X reeled back along the hypotenuse toward the center.
+    px = ox + (xx - ox) * 0.62
+    py = oy + (xy - oy) * 0.62
+    body.append(
+        f'<line x1="{xx - 8:.1f}" y1="{xy + 6:.1f}" x2="{px + 6:.1f}" '
+        f'y2="{py - 4:.1f}" stroke="{AMBER}" stroke-width="2.2" '
+        f'stroke-dasharray="2 4" marker-end="url(#ov_pull)"/>'
+    )
+    body.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="5.5" fill="{AMBER}"/>')
+    body.append(
+        f'<text x="{px - 10:.1f}" y="{py + 22:.1f}" font-size="12.5" '
+        f'text-anchor="middle" fill="{AMBER}">shrunk</text>'
+    )
+
+    body.append(
+        f'<text x="30" y="{height - 20:.1f}" font-size="12" fill="{INK_SOFT}">'
+        f"Noise adds nearly ⊥ θ, so ‖X‖² ≈ ‖θ‖² + pσ² — "
+        f"the observed X runs longer than the truth.</text>"
+    )
+
+    return write_svg(
+        "stein-overshoot.svg",
+        svg_doc(
+            width,
+            height,
+            "A right triangle from the origin: the true vector theta as one leg, "
+            "perpendicular noise as the other, and the longer observed vector X as "
+            "the hypotenuse, with X pulled back toward the center to land closer to "
+            "theta.",
+            body,
+        ),
+    )
+
+
+def fig_borrowing_strength() -> Path:
+    """Diagram: raw estimates of unrelated quantities pulled toward a shared center."""
+    width, height = 720, 430
+    body = [
+        eyebrow(30, 38, "SHRINK ALL OF THEM TOWARD ONE CENTER"),
+        arrow_marker(AMBER, "bs_pull"),
+    ]
+
+    # Value axis geometry: value v in [0, 1] maps to x in [x0, x1].
+    x0, x1 = 250.0, 660.0
+    center = 0.5  # The shared shrinkage center (grand average), on a common scale.
+    shrink = 0.6  # Pull factor: shrunk = center + shrink * (raw - center).
+
+    def xof(v: float) -> float:
+        return x0 + v * (x1 - x0)
+
+    # Each row: an unrelated quantity, its true value, and its raw reading. The raw
+    # readings overshoot outward from the center, so shrinking lands nearer truth.
+    rows = (
+        ("batting average", 0.80, 0.95),
+        ("wheat yield", 0.20, 0.05),
+        ("used-car price", 0.65, 0.82),
+        ("toxin level", 0.35, 0.16),
+        ("exam score", 0.55, 0.70),
+    )
+    y0, step, lane_h = 78.0, 62.0, 62.0
+
+    xc = xof(center)
+    top = y0 - 14
+    bot = y0 + (len(rows) - 1) * step + lane_h - 30
+    body.append(
+        f'<line x1="{xc:.1f}" y1="{top:.1f}" x2="{xc:.1f}" y2="{bot:.1f}" '
+        f'stroke="{MUTED}" stroke-width="1.4" stroke-dasharray="5 4"/>'
+    )
+    body.append(
+        f'<text x="{xc:.1f}" y="{top - 6:.1f}" font-size="11.5" '
+        f'text-anchor="middle" fill="{MUTED}">shared center</text>'
+    )
+
+    for i, (name, truth, raw) in enumerate(rows):
+        cy = y0 + i * step
+        body.append(
+            f'<line x1="{x0 - 4:.1f}" y1="{cy:.1f}" x2="{x1 + 8:.1f}" y2="{cy:.1f}" '
+            f'stroke="{RULE}" stroke-width="1.2"/>'
+        )
+        body.append(
+            f'<text x="{x0 - 20:.1f}" y="{cy + 4:.1f}" font-size="12.5" '
+            f'text-anchor="end" fill="{INK_SOFT}">{name}</text>'
+        )
+
+        shrunk = center + shrink * (raw - center)
+        xr, xs, xt = xof(raw), xof(shrunk), xof(truth)
+
+        body.append(
+            f'<line x1="{xr:.1f}" y1="{cy:.1f}" '
+            f'x2="{xs + (6 if xs < xr else -6):.1f}" y2="{cy:.1f}" '
+            f'stroke="{AMBER}" stroke-width="1.6" marker-end="url(#bs_pull)"/>'
+        )
+        body.append(_star(xt, cy, 8.0, ACCENT))
+        body.append(
+            f'<circle cx="{xr:.1f}" cy="{cy:.1f}" r="6" fill="{PAPER}" '
+            f'stroke="{ACCENT}" stroke-width="2.2"/>'
+        )
+        body.append(f'<circle cx="{xs:.1f}" cy="{cy:.1f}" r="6" fill="{AMBER}"/>')
+
+    # A compact legend along the bottom.
+    ly = bot + 34
+    lx = x0 - 20
+    body.append(_star(lx + 6, ly - 4, 7.0, ACCENT))
+    body.append(
+        f'<text x="{lx + 20:.1f}" y="{ly:.1f}" font-size="11.5" fill="{INK_SOFT}">'
+        f"truth</text>"
+    )
+    body.append(
+        f'<circle cx="{lx + 118:.1f}" cy="{ly - 4:.1f}" r="6" fill="{PAPER}" '
+        f'stroke="{ACCENT}" stroke-width="2.2"/>'
+    )
+    body.append(
+        f'<text x="{lx + 132:.1f}" y="{ly:.1f}" font-size="11.5" fill="{INK_SOFT}">'
+        f"raw estimate</text>"
+    )
+    body.append(f'<circle cx="{lx + 268:.1f}" cy="{ly - 4:.1f}" r="6" fill="{AMBER}"/>')
+    body.append(
+        f'<text x="{lx + 282:.1f}" y="{ly:.1f}" font-size="11.5" fill="{INK_SOFT}">'
+        f"shrunk estimate</text>"
+    )
+
+    return write_svg(
+        "borrowing-strength.svg",
+        svg_doc(
+            width,
+            height,
+            "Five lanes for unrelated quantities, each with a raw estimate pulled "
+            "toward a shared center to a shrunk estimate, landing closer to the true "
+            "value.",
+            body,
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -1994,6 +2669,17 @@ FIGURES = (
     fig_minimax_bayes,
     # Ch 12 · The Bias–Variance Tradeoff
     fig_dartboard,
+    # Ch 13 · The Shrinkage Surprise
+    fig_stein_risk,
+    fig_stein_overshoot,
+    fig_borrowing_strength,
+    # Ch 14 · Penalties and Priors
+    fig_constraint_geometry,
+    fig_prior_densities,
+    # Ch 15 · Choosing the Penalty
+    fig_kfold_schematic,
+    fig_cross_validation_curve,
+    fig_effective_degrees_of_freedom,
     # Cover and icons
     fig_cover,
     fig_icon,

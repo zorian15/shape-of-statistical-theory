@@ -719,6 +719,111 @@
     draw();
   };
 
+  // Ridge vs lasso coefficient paths as the penalty lambda grows. Ridge shrinks
+  // each coefficient proportionally (z / (1+lambda)) and never reaches zero;
+  // lasso soft-thresholds (sign(z)·max(|z|-lambda, 0)) and snaps coefficients to
+  // exactly zero one by one. Slide lambda and watch the sparsity appear.
+  WIDGETS["regularization-path"] = function (figure, cap) {
+    var z = [3.0, -2.2, 1.5, -0.8, 0.4]; // Unpenalized (OLS) estimates.
+    var colors = ["#274b6d", "#9c6b12", "#6b4f9c", "#b04a3f", "#3b3d42"];
+    var xr = [0, 3.5];
+    var yr = [-2.7, 3.4];
+
+    function ridge(zj, lam) {
+      return zj / (1 + lam);
+    }
+    function lasso(zj, lam) {
+      var m = Math.abs(zj) - lam;
+      return m <= 0 ? 0 : (zj < 0 ? -1 : 1) * m;
+    }
+
+    var cv = makeCanvas(figure, cap, 0.62);
+    var controls = controlsBox(figure, cap);
+    var readout = readoutBox(figure, cap);
+    var lamInput = addSlider(
+      controls,
+      null,
+      "penalty&nbsp;<em>&lambda;</em>",
+      0,
+      3.5,
+      0.05,
+      0
+    );
+
+    function draw() {
+      var dim = cv.size();
+      var padL = 26;
+      var pad = 10;
+      var mx = function (x) {
+        return padL + ((x - xr[0]) * (dim.w - padL - pad)) / (xr[1] - xr[0]);
+      };
+      var my = function (y) {
+        return dim.h - 22 - ((y - yr[0]) * (dim.h - 22 - pad)) / (yr[1] - yr[0]);
+      };
+      var ctx = cv.ctx;
+      var lam = parseFloat(lamInput.value);
+      drawAxes(ctx, dim, mx, my, xr, yr);
+
+      // Each coefficient: ridge path dashed, lasso path solid, same color.
+      for (var j = 0; j < z.length; j++) {
+        ctx.strokeStyle = colors[j];
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        for (var i = 0; i <= 120; i++) {
+          var l = xr[0] + ((xr[1] - xr[0]) * i) / 120;
+          var pt = ridge(z[j], l);
+          if (i === 0) ctx.moveTo(mx(l), my(pt));
+          else ctx.lineTo(mx(l), my(pt));
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        for (i = 0; i <= 120; i++) {
+          l = xr[0] + ((xr[1] - xr[0]) * i) / 120;
+          pt = lasso(z[j], l);
+          if (i === 0) ctx.moveTo(mx(l), my(pt));
+          else ctx.lineTo(mx(l), my(pt));
+        }
+        ctx.stroke();
+        dot(ctx, mx(lam), my(lasso(z[j], lam)), 4, colors[j]);
+      }
+
+      // The current penalty.
+      ctx.strokeStyle = C.muted;
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.moveTo(mx(lam), my(yr[0]));
+      ctx.lineTo(mx(lam), my(yr[1]));
+      ctx.stroke();
+
+      ctx.fillStyle = C.muted;
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("penalty λ →", dim.w - pad, dim.h - 6);
+
+      var nz = 0;
+      for (j = 0; j < z.length; j++) if (lasso(z[j], lam) !== 0) nz++;
+      readout.innerHTML =
+        '<span class="widget-num var">solid = lasso: ' +
+        nz +
+        " of " +
+        z.length +
+        " nonzero (sparse)</span>" +
+        '<span class="widget-num bias">dashed = ridge: all shrink, none reach 0</span>' +
+        '<span class="widget-num total">λ = ' +
+        lam.toFixed(2) +
+        "</span>";
+    }
+
+    lamInput.addEventListener("input", draw);
+    window.addEventListener("resize", draw);
+    draw();
+  };
+
   function boot() {
     var figures = document.querySelectorAll("figure.widget[data-widget]");
     Array.prototype.forEach.call(figures, function (figure) {
