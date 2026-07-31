@@ -51,6 +51,74 @@ class Question:
 
 
 _QUIZZES: dict[str, tuple[Question, ...]] = {
+    "probability-refresher": (
+        Question(
+            prompt="For two random variables X and Y that may be dependent, which statement is correct?",
+            options=(
+                "E[X + Y] = E[X] + E[Y] always holds, but Var(X + Y) = Var(X) + Var(Y) can fail because of the covariance cross term.",
+                "Both the expectation identity and the variance identity hold for any X and Y, dependent or not.",
+                "Both identities require X and Y to be independent, since expectation and variance behave the same way under dependence.",
+                "E[X + Y] = E[X] + E[Y] needs independence, while the variance always simply adds regardless of any dependence between them.",
+            ),
+            answer=0,
+            explanation="Linearity of expectation is unconditional — it never needs independence. Variance is different: Var(X + Y) = Var(X) + Var(Y) + 2 Cov(X, Y), so variances add only when the covariance vanishes (uncorrelated is enough; full independence is not required). The two operations are often confused precisely because linearity is so forgiving.",
+        ),
+        Question(
+            prompt="Among the modes of convergence, which implication is valid in general?",
+            options=(
+                "Almost sure convergence implies convergence in probability.",
+                "Convergence in probability implies almost sure convergence.",
+                "Convergence in distribution implies convergence in probability.",
+                "Convergence in distribution implies convergence in mean square.",
+            ),
+            answer=0,
+            explanation="The arrows run one way: almost sure ⇒ in probability ⇒ in distribution, and mean square ⇒ in probability. The reverses fail — a sequence can converge in probability while its individual paths do not settle (almost sure fails), and convergence in distribution is only about the shape of the limiting law, so it implies the stronger modes only when the limit is a constant.",
+        ),
+        Question(
+            prompt="If √n(θ̂ − θ) converges in distribution to Normal(0, σ²), what does the delta method give for a smooth g with g'(θ) ≠ 0?",
+            options=(
+                "√n(g(θ̂) − g(θ)) converges to Normal(0, g'(θ)² σ²).",
+                "√n(g(θ̂) − g(θ)) converges to Normal(0, g'(θ) σ²), the slope entering to the first power.",
+                "√n(g(θ̂) − g(θ)) converges to Normal(0, g(θ)² σ²), scaled by the function's value.",
+                "√n(g(θ̂) − g(θ)) converges to Normal(0, σ² / g'(θ)²), since the transformation divides the variance.",
+            ),
+            answer=0,
+            explanation="Linearize g at θ: g(θ̂) − g(θ) ≈ g'(θ)(θ̂ − θ). A linear image of an asymptotically normal quantity is asymptotically normal, and scaling a random variable by a constant multiplies its variance by that constant squared — so the slope enters as g'(θ)², not to the first power and not the function's value. A stationary point g'(θ) = 0 kills the first-order term and the method must be taken to second order.",
+        ),
+        Question(
+            prompt="Chebyshev's inequality bounds the mass beyond k standard deviations by 1/k², about 25% at k = 2, where a normal keeps only about 5%. Why lean on so loose a bound?",
+            options=(
+                "Because it assumes only a finite variance — no shape, no independence — so it applies when nothing else does and still proves the weak law of large numbers.",
+                "Because it is actually tighter than the central limit theorem for large samples, giving a sharper tail estimate.",
+                "Because it becomes an equality for the normal distribution, so the 25% figure is exact there.",
+                "Because it requires the distribution to be symmetric, which the normal conveniently satisfies.",
+            ),
+            answer=0,
+            explanation="Chebyshev's power is its universality: a finite variance is the only assumption, so it holds distribution-free. That is exactly what makes it prove consistency — drive Var(X̄ₙ) = σ²/n to zero and the probability of straying from the mean is squeezed to zero with no shape assumption. When you do know the distribution, the CLT gives a far sharper normal tail; Chebyshev is the tool of last resort, not a tight one.",
+        ),
+        Question(
+            prompt="What does the law of total expectation (the tower property) state?",
+            options=(
+                "E[E[Y | X]] = E[Y]: averaging the conditional mean back over X recovers the plain mean of Y.",
+                "E[E[Y | X]] = E[X]: the iterated expectation collapses onto the conditioning variable.",
+                "E[Y | X] = E[Y] whenever X and Y share any dependence at all, so conditioning changes nothing.",
+                "E[E[Y | X]] = E[Y] only when X and Y are independent, and otherwise the identity fails.",
+            ),
+            answer=0,
+            explanation="The conditional expectation E[Y | X] is itself a random variable — a function of X — and averaging it over the distribution of X returns E[Y], for any X and Y. It is not restricted to the independent case (independence instead makes E[Y | X] = E[Y] the constant). The companion law of total variance splits Var(Y) into the mean of the within-slice variance plus the variance of the slice means.",
+        ),
+        Question(
+            prompt="Jensen's inequality says that for a convex function g, how do g(E[X]) and E[g(X)] compare?",
+            options=(
+                "g(E[X]) ≤ E[g(X)]: the function of the average is at most the average of the function.",
+                "g(E[X]) ≥ E[g(X)]: the function of the average dominates the average of the function.",
+                "g(E[X]) = E[g(X)] for every g, since expectation passes through functions.",
+                "The comparison depends entirely on the sign of E[X] and cannot be settled from convexity alone.",
+            ),
+            answer=0,
+            explanation="Convexity bends the curve upward, so chords lie above the graph and averaging inputs undershoots the averaged output: g(E[X]) ≤ E[g(X)]. Taking g(x) = x² recovers E[X²] ≥ (E[X])², which is just Var(X) ≥ 0. The inequality flips for concave g, and equals only for linear g or a degenerate X — expectation does not pass through nonlinear functions.",
+        ),
+    ),
     "asymptotic-efficiency": (
         Question(
             prompt="Under the usual regularity conditions, what does asymptotic normality of the MLE assert about √n(θ̂ − θ₀)?",

@@ -740,6 +740,70 @@ _TERMS: tuple[Term, ...] = (
         "Minimum-norm interpolator",
         "Among the many fits that achieve zero training error in an overparameterized model, the one with the smallest coefficient norm. Choosing it acts as an implicit ridge-style regularizer and is the estimator behind benign overfitting.",
     ),
+    Term(
+        "Sample space",
+        "The set of every outcome an experiment could produce, usually written Omega. Events are the subsets of it to which a probability is assigned.",
+    ),
+    Term(
+        "Event",
+        "A subset of the sample space, that is, a collection of outcomes to which a probability can be assigned.",
+    ),
+    Term(
+        "Probability axioms",
+        "Kolmogorov's three rules every probability obeys: it is nonnegative, the whole sample space has probability one, and the probability of a union of disjoint events is the sum of their probabilities (countable additivity). Every other rule of probability is derived from these.",
+    ),
+    Term(
+        "Variance",
+        "The expected squared deviation of a random variable from its mean, Var(X) = E[(X − mu)²] = E[X²] − mu², a measure of spread. Its square root is the standard deviation.",
+    ),
+    Term(
+        "Law of the unconscious statistician (LOTUS)",
+        "The rule that the expectation of a function of a random variable can be computed by integrating the function against the variable's own distribution, without first finding the distribution of the transformed variable.",
+    ),
+    Term(
+        "Conditional expectation",
+        "The mean of Y computed within the slice where X takes a given value, E[Y | X]. As a function of X it is itself a random variable, and it is the object on which sufficiency and the tower property are built.",
+    ),
+    Term(
+        "Law of total expectation (tower property)",
+        "The identity E[E[Y | X]] = E[Y]: averaging the conditional mean of Y back over the distribution of X recovers the unconditional mean. It holds for any X and Y.",
+    ),
+    Term(
+        "Law of total variance",
+        "The decomposition Var(Y) = E[Var(Y | X)] + Var(E[Y | X]), splitting the spread of Y into the average within-slice variance plus the variance of the slice means.",
+    ),
+    Term(
+        "Jensen's inequality",
+        "For a convex function g, the function of the average is at most the average of the function: g(E[X]) ≤ E[g(X)]. Applied to g(x) = x² it gives E[X²] ≥ (E[X])², equivalently Var(X) ≥ 0; the inequality reverses for concave g.",
+    ),
+    Term(
+        "Markov's inequality",
+        "For a nonnegative random variable, P(X ≥ a) ≤ E[X]/a: a distribution-free ceiling on how much mass can sit in the right tail, given only the mean.",
+    ),
+    Term(
+        "Chebyshev's inequality",
+        "The distribution-free bound P(|X − mu| ≥ k sigma) ≤ 1/k², obtained by applying Markov's inequality to the squared deviation. It needs only a finite variance and is the engine behind the weak law of large numbers.",
+    ),
+    Term(
+        "Convergence in mean square",
+        "A sequence converges in mean square to X when E[(Xₙ − X)²] tends to zero; it is a statement about the average squared gap and it implies convergence in probability.",
+    ),
+    Term(
+        "Continuous mapping theorem",
+        "The result that a continuous transformation preserves convergence: if Xₙ converges to X in probability or in distribution, then g(Xₙ) converges to g(X) in the same mode.",
+    ),
+    Term(
+        "Slutsky's theorem",
+        "The rule that if Xₙ converges in distribution to X and Yₙ converges in probability to a constant c, then Xₙ + Yₙ, Xₙ Yₙ, and Xₙ / Yₙ converge in distribution to X + c, cX, and X/c. It lets a consistent estimate of a nuisance quantity be substituted inside a limit without disturbing it.",
+    ),
+    Term(
+        "Delta method",
+        "The rule that pushes asymptotic normality through a smooth transformation: if √n(θ̂ − θ) converges to Normal(0, sigma²) then √n(g(θ̂) − g(θ)) converges to Normal(0, g'(θ)² sigma²). It comes from linearizing g by its tangent at θ.",
+    ),
+    Term(
+        "Independent and identically distributed (i.i.d.)",
+        "A description of data that are mutually independent draws from one common distribution. Their joint density factors into a product, which is why the log-likelihood is a sum and the limit theorems apply.",
+    ),
 )
 
 

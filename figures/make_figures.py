@@ -3412,6 +3412,50 @@ def fig_double_descent() -> Path:
     return save_plot(fig, "double-descent.svg")
 
 
+def fig_chebyshev_bound() -> Path:
+    """Plot: Chebyshev's universal 1/k^2 tail ceiling against a bell's true tail."""
+    style_plot()
+    fig, ax = plt.subplots(figsize=(6.4, 3.7))
+    x = np.linspace(-4.2, 4.2, 900)
+    dens = np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
+    k = 2.0  # Measure the tail beyond k standard deviations.
+
+    ax.plot(x, dens, color=ACCENT, linewidth=2.2)
+    tail = np.abs(x) >= k
+    ax.fill_between(x, 0, dens, where=tail, color=BRICK, alpha=0.28)
+    for s in (-k, k):
+        ax.axvline(s, color=MUTED, linewidth=1.1, linestyle=(0, (4, 3)))
+
+    ax.text(
+        -4.1,
+        0.40,
+        "Chebyshev ceiling: at most 1/k² = 1/4 of the mass\npast k = 2σ, for ANY distribution with finite variance",
+        color=BRICK,
+        fontsize=8,
+        ha="left",
+        va="top",
+    )
+    ax.annotate(
+        "a bell keeps only\nabout 5% out here",
+        xy=(2.55, 0.012),
+        xytext=(2.35, 0.19),
+        color=INK_SOFT,
+        fontsize=8,
+        ha="left",
+        va="center",
+        arrowprops=dict(arrowstyle="->", color=MUTED, lw=1.0),
+    )
+    ax.set_xlabel("distance from the mean (in standard deviations)")
+    ax.set_ylabel("density")
+    ax.set_ylim(0, 0.46)
+    ax.set_xlim(-4.2, 4.2)
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(length=0, axis="y")
+    fig.tight_layout()
+    return save_plot(fig, "chebyshev-bound.svg")
+
+
 # ---------------------------------------------------------------------------
 # The cover and the icons.
 #
@@ -3631,6 +3675,8 @@ FIGURES = (
     fig_marchenko_pastur,
     fig_concentration_shell,
     fig_double_descent,
+    # Appendix A · A Probability Refresher
+    fig_chebyshev_bound,
     # Cover and icons
     fig_cover,
     fig_icon,
